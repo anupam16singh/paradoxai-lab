@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParadoxAI Lab — Act on Complexity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --ink:#0a0a0a;--white:#fff;--off:#f7f6f3;
+  --mid:#999;--border:#e0ddd5;
+  --serif:'DM Serif Display',serif;
+  --sans:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+  --shadow:0 4px 32px rgba(0,0,0,0.10);
+  --sb-w:280px;--nav-h:60px;
+}
+body{font-family:var(--sans);color:var(--ink);font-size:15px;line-height:1.6;overflow-x:hidden;background:var(--white)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border)}
+
+@keyframes blink{50%{opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ══ SIDEBAR BACKDROP ══ */
+.sb-backdrop{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.48);
+  backdrop-filter:blur(3px);
+  z-index:490;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.3s ease;
+}
+.sb-backdrop.open{opacity:1;pointer-events:all}
+
+/* ══ SIDEBAR DRAWER ══ */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;
+  width:var(--sb-w);
+  background:var(--ink);
+  z-index:500;
+  display:flex;flex-direction:column;
+  transform:translateX(calc(-1 * var(--sb-w)));
+  transition:transform 0.36s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:6px 0 48px rgba(0,0,0,0.35);
+  overflow-y:auto;overflow-x:hidden;
+}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:#1e1e1e}
+.sidebar.open{transform:translateX(0)}
+
+.sb-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:28px 24px 22px;border-bottom:1px solid #181818;flex-shrink:0;
+}
+.sb-logo{font-family:var(--serif);font-size:19px;color:var(--white);letter-spacing:-0.3px;line-height:1.15}
+.sb-tagline{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:#3a3a3a;margin-top:5px;text-transform:uppercase}
+.sb-close{
+  background:none;border:1px solid #252525;color:#444;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:13px;transition:all 0.2s;flex-shrink:0;margin-top:2px;
+}
+.sb-close:hover{border-color:#777;color:var(--white)}
+
+.sb-section{padding:18px 24px;border-bottom:1px solid #111;flex-shrink:0}
+.sb-label{
+  font-family:var(--mono);font-size:8px;letter-spacing:4px;
+  color:#303030;text-transform:uppercase;margin-bottom:12px;
+  padding-bottom:8px;border-bottom:1px solid #141414;
+}
+.sb-nav-link{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;color:#595959;text-decoration:none;
+  padding:9px 0;border-bottom:1px solid #0e0e0e;
+  transition:all 0.2s;
+}
+.sb-nav-link:last-child{border-bottom:none}
+.sb-nav-link:hover{color:var(--white);padding-left:6px}
+.sb-nav-link .arr{font-size:11px;opacity:0;transition:opacity 0.2s}
+.sb-nav-link:hover .arr{opacity:1}
+.sb-nav-link.active{color:var(--white)}
+
+/* Product cards in sidebar */
+.sb-product{
+  display:flex;align-items:center;gap:12px;
+  padding:12px;border:1px solid #1c1c1c;
+  margin-bottom:8px;text-decoration:none;
+  transition:all 0.22s;position:relative;overflow:hidden;
+}
+.sb-product::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:2px;background:var(--white);transform:scaleY(0);
+  transition:transform 0.25s;transform-origin:bottom;
+}
+.sb-product:hover{background:#0d0d0d;border-color:#2e2e2e}
+.sb-product:hover::before{transform:scaleY(1)}
+.sb-product:last-child{margin-bottom:0}
+.sb-icon{
+  width:36px;height:36px;background:#111;border:1px solid #252525;
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+}
+.sb-product-name{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--white)}
+.sb-product-cat{font-size:10px;color:#444;margin-top:2px;line-height:1.3}
+.sb-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--mono);font-size:7px;letter-spacing:1px;
+  padding:2px 6px;margin-top:5px;
+}
+.sb-badge.live{background:#061206;color:#4ade80;border:1px solid #1a3a1a}
+.sb-badge.beta{background:#160f00;color:#fbbf24;border:1px solid #3a2800}
+.sb-badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.4s steps(1) infinite}
+
+.sb-qlink{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;font-family:var(--mono);letter-spacing:1px;
+  color:#3a3a3a;text-decoration:none;
+  padding:8px 0;border-bottom:1px solid #0e0e0e;
+  transition:color 0.2s;
+}
+.sb-qlink:hover{color:#888}
+.sb-qlink:last-child{border-bottom:none}
+
+.sb-footer{
+  margin-top:auto;padding:18px 24px;
+  border-top:1px solid #111;flex-shrink:0;
+}
+.sb-status-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:blink 1.5s steps(1) infinite}
+.sb-status-text{font-family:var(--mono);font-size:9px;color:#383838;letter-spacing:2px}
+.sb-copy{font-family:var(--mono);font-size:8px;color:#222;letter-spacing:1px}
+
+/* ══ SCROLL PROGRESS ══ */
+.scroll-bar{
+  position:fixed;top:var(--nav-h);left:0;right:0;
+  height:2px;background:var(--ink);
+  z-index:400;width:0%;transition:width 0.08s linear;
+}
+
+/* ══ TOP NAV ══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:300;
+  height:var(--nav-h);
+  background:rgba(255,255,255,0.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 40px;
+}
+.nav-left{display:flex;align-items:center;gap:14px}
+
+/* Hamburger */
+.hbg{
+  display:flex;flex-direction:column;justify-content:center;gap:5px;
+  width:36px;height:36px;padding:6px;
+  border:1px solid var(--border);background:transparent;cursor:pointer;
+  transition:all 0.2s;flex-shrink:0;
+}
+.hbg:hover{border-color:var(--ink);background:var(--off)}
+.hbg span{display:block;height:1.5px;background:var(--ink);transition:all 0.28s ease;transform-origin:center}
+.hbg.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.hbg.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hbg.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+.nav-brand{font-family:var(--serif);font-size:20px;color:var(--ink);letter-spacing:-0.3px;text-decoration:none}
+.nav-badge{font-family:var(--mono);font-size:8px;letter-spacing:2px;background:var(--ink);color:var(--white);padding:2px 7px;vertical-align:middle}
+.nav-links{display:flex;align-items:center;gap:26px}
+.nav-links a{font-size:13px;color:var(--mid);text-decoration:none;transition:color 0.2s}
+.nav-links a:hover,.nav-links a.active{color:var(--ink)}
+.nav-cta{
+  background:var(--ink);color:var(--white);
+  padding:8px 20px;font-size:13px;font-weight:500;
+  border:none;cursor:pointer;font-family:var(--sans);transition:opacity 0.2s;
+}
+.nav-cta:hover{opacity:0.8}
+
+/* ══ TICKER ══ */
+.ticker-wrap{
+  position:fixed;top:var(--nav-h);left:0;right:0;z-index:290;
+  overflow:hidden;height:26px;background:var(--ink);
+  border-bottom:1px solid #1a1a1a;display:flex;align-items:center;
+}
+.ticker-inner{
+  display:flex;gap:56px;white-space:nowrap;
+  animation:ticker 44s linear infinite;font-family:var(--mono);
+}
+.ticker-inner span{font-size:9px;letter-spacing:3px;color:#333}
+.ticker-inner strong{color:#5a5a5a}
+
+/* ══ PAGE ══ */
+.page{padding-top:calc(var(--nav-h) + 26px)}
+
+/* ══ HERO ══ */
+.hero{
+  min-height:calc(100vh - var(--nav-h) - 26px);
+  display:flex;align-items:center;
+  padding:60px 72px;background:var(--white);
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'';position:absolute;top:0;right:0;
+  width:48%;height:100%;background:var(--off);
+  clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);z-index:0;
+}
+.hero-in{
+  max-width:1160px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;
+  align-items:center;position:relative;z-index:1;
+}
+.hero-eye{font-family:var(--mono);font-size:10px;letter-spacing:4px;color:var(--mid);margin-bottom:20px;text-transform:uppercase}
+.hero-h1{
+  font-family:var(--serif);font-size:clamp(42px,4.8vw,68px);
+  line-height:1.04;color:var(--ink);margin-bottom:24px;
+  letter-spacing:-1.5px;animation:fadeUp 0.7s ease both;
+}
+.hero-h1 em{font-style:italic;color:var(--mid)}
+.hero-desc{
+  font-size:16px;color:#666;line-height:1.78;
+  margin-bottom:36px;max-width:420px;
+  animation:fadeUp 0.7s 0.12s ease both;
+}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp 0.7s 0.22s ease both}
+.btn-p{background:var(--ink);color:var(--white);padding:13px 28px;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+.btn-p:hover{background:#333}
+.btn-g{background:transparent;color:var(--ink);padding:13px 28px;font-size:14px;font-weight:500;border:1.5px solid var(--border);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+.btn-g:hover{border-color:var(--ink)}
+.hero-stats{margin-top:52px;display:flex;gap:32px;animation:fadeUp 0.7s 0.32s ease both}
+.st-num{font-family:var(--serif);font-size:30px;color:var(--ink);line-height:1}
+.st-lbl{font-size:10px;color:var(--mid);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.st-div{width:1px;height:44px;background:var(--border);align-self:center}
+
+.hero-products{display:flex;flex-direction:column;gap:14px}
+.hp-card{
+  background:var(--white);border:1px solid var(--border);
+  padding:22px 24px;display:flex;align-items:flex-start;gap:16px;
+  cursor:pointer;transition:all 0.22s;text-decoration:none;color:inherit;
+  position:relative;overflow:hidden;
+}
+.hp-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:var(--ink);transform:scaleX(0);
+  transition:transform 0.3s;transform-origin:left;
+}
+.hp-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.hp-card:hover::after{transform:scaleX(1)}
+.hp-ico{width:44px;height:44px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.hp-ico.lt{background:var(--off);border:1px solid var(--border)}
+.hp-name{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--ink);margin-bottom:4px}
+.hp-desc{font-size:13px;color:#777;line-height:1.5}
+.hp-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.hp-tag{font-family:var(--mono);font-size:7px;letter-spacing:1px;padding:2px 6px;border:1px solid var(--border);color:var(--mid)}
+.hp-tag.on{border-color:var(--ink);color:var(--ink)}
+.hp-arr{margin-left:auto;font-size:16px;color:var(--mid);align-self:center;flex-shrink:0;transition:all 0.2s}
+.hp-card:hover .hp-arr{transform:translateX(4px);color:var(--ink)}
+
+/* ══ SECTIONS ══ */
+.sec{padding:88px 72px}
+.si{max-width:1160px;margin:0 auto}
+.sec-lbl{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--mid);text-transform:uppercase;margin-bottom:14px}
+.sec-h2{font-family:var(--serif);font-size:clamp(30px,3.5vw,50px);line-height:1.08;color:var(--ink);margin-bottom:20px;letter-spacing:-0.5px}
+.sec-h2 em{font-style:italic;color:var(--mid)}
+.sec-sub{font-size:16px;color:#666;max-width:520px;line-height:1.78}
+
+/* Mission */
+.s-mission{background:var(--off)}
+.mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;margin-top:56px}
+.pillars{display:flex;flex-direction:column;gap:22px}
+.pillar{border-left:2px solid var(--border);padding-left:22px;transition:border-color 0.2s;cursor:default}
+.pillar:hover{border-color:var(--ink)}
+.pillar-t{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:5px}
+.pillar-d{font-size:13px;color:#777;line-height:1.65}
+.mq{font-family:var(--serif);font-size:clamp(20px,2.2vw,30px);line-height:1.45;color:var(--ink);font-style:italic}
+.mq cite{display:block;font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--mid);margin-top:18px}
+
+/* Products */
+.s-products{background:var(--white)}
+.prods-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-top:56px}
+.pc{background:var(--white);padding:48px 40px;position:relative;overflow:hidden;transition:background 0.25s}
+.pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ink);transform:scaleX(0);transition:transform 0.32s;transform-origin:left}
+.pc:hover::before{transform:scaleX(1)}
+.pc:hover{background:var(--off)}
+.pc-n{font-family:var(--serif);font-size:72px;color:var(--border);line-height:1;position:absolute;top:20px;right:30px;pointer-events:none;transition:color 0.25s}
+.pc:hover .pc-n{color:#d8d5cd}
+.pc-ico{font-size:30px;margin-bottom:18px}
+.pc-tag{display:inline-block;font-family:var(--mono);font-size:8px;letter-spacing:2px;padding:3px 8px;margin-bottom:14px}
+.pc-tag.beta{background:#fef9ef;color:#b8860b;border:1px solid #fcd34d}
+.pc-tag.live{background:#f0fdf4;color:#1a7a4a;border:1px solid #86efac}
+.pc-name{font-family:var(--mono);font-size:12px;letter-spacing:4px;color:var(--ink);margin-bottom:6px;text-transform:uppercase}
+.pc-full{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:12px;line-height:1.2}
+.pc-desc{font-size:13px;color:#777;line-height:1.72;margin-bottom:26px;max-width:360px}
+.pc-feats{list-style:none;margin-bottom:28px}
+.pc-feats li{font-size:12px;color:#666;padding:5px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.pc-feats li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--ink);flex-shrink:0}
+.pc-cta{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--ink);text-decoration:none;padding:10px 20px;border:1.5px solid var(--ink);transition:all 0.2s}
+.pc-cta:hover{background:var(--ink);color:var(--white)}
+
+/* Approach */
+.s-approach{background:var(--ink)}
+.s-approach .sec-h2{color:var(--white)}
+.s-approach .sec-h2 em{color:#2e2e2e}
+.s-approach .sec-lbl{color:#2e2e2e}
+.s-approach .sec-sub{color:#505050}
+.approach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#161616;margin-top:56px}
+.ac{background:var(--ink);padding:36px 28px;transition:background 0.2s}
+.ac:hover{background:#0a0a0a}
+.ac-n{font-family:var(--serif);font-size:52px;color:#141414;line-height:1;margin-bottom:12px}
+.ac-t{font-size:14px;font-weight:600;color:var(--white);margin-bottom:8px}
+.ac-d{font-size:13px;color:#4a4a4a;line-height:1.65}
+
+/* About */
+.s-about{background:var(--off)}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;margin-top:56px}
+.about-text p{font-size:15px;color:#666;line-height:1.82;margin-bottom:16px}
+.val-row{display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--border)}
+.val-row:first-child{border-top:1px solid var(--border)}
+.val-name{font-size:14px;font-weight:600;color:var(--ink)}
+.val-note{font-size:12px;color:var(--mid);text-align:right;max-width:200px;line-height:1.4}
+
+/* CTA */
+.final-cta{background:var(--ink);color:var(--white);padding:120px 72px;text-align:center}
+.cta-h2{font-family:var(--serif);font-size:clamp(36px,4.5vw,62px);color:var(--white);margin-bottom:16px;letter-spacing:-1px}
+.cta-h2 em{font-style:italic;color:#2e2e2e}
+.cta-sub{font-size:16px;color:#484848;margin-bottom:48px}
+.cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* Footer */
+footer{background:#050505;padding:36px 72px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-brand{font-family:var(--serif);font-size:17px;color:#505050}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap}
+.footer-links a{font-size:11px;color:#2a2a2a;text-decoration:none;transition:color 0.2s}
+.footer-links a:hover{color:#777}
+.footer-copy{font-family:var(--mono);font-size:9px;color:#1e1e1e;letter-spacing:1px}
+
+/* Contact modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);max-width:480px;width:100%;padding:44px;position:relative;animation:fadeUp 0.25s ease}
+.modal-x{position:absolute;top:16px;right:16px;background:none;border:1px solid var(--border);color:var(--mid);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:all 0.2s}
+.modal-x:hover{border-color:var(--ink);color:var(--ink)}
+.modal-h{font-family:var(--serif);font-size:30px;margin-bottom:8px}
+.modal-s{font-size:13px;color:var(--mid);margin-bottom:28px}
+.fr{margin-bottom:16px}
+.fl{font-size:11px;font-weight:600;color:var(--ink);display:block;margin-bottom:6px;letter-spacing:0.5px}
+.fi,.fsel,.fta{width:100%;padding:11px 14px;border:1.5px solid var(--border);font-family:var(--sans);font-size:14px;outline:none;background:var(--white);transition:border-color 0.2s;color:var(--ink)}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--ink)}
+.fta{resize:vertical;min-height:100px}
+.fsub{width:100%;background:var(--ink);color:var(--white);padding:14px;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);margin-top:8px;transition:opacity 0.2s}
+.fsub:hover{opacity:0.82}
+.fn{font-size:11px;color:var(--mid);text-align:center;margin-top:12px}
+
+/* Back to top */
+.btt{position:fixed;bottom:32px;right:32px;width:44px;height:44px;background:var(--ink);color:var(--white);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:all 0.25s}
+.btt.show{opacity:1;pointer-events:all}
+.btt:hover{background:#333}
+
+/* Responsive */
+@media(max-width:900px){
+  .hero,.sec,.final-cta,footer{padding-left:28px;padding-right:28px}
+  nav{padding:0 20px}
+  .hero-in,.mission-grid,.prods-grid,.about-grid{grid-template-columns:1fr}
+  .hero::after{display:none}
+  .approach-grid{grid-template-columns:1fr}
+  .nav-links{display:none}
+}
+@media(max-width:480px){.hero-stats{flex-wrap:wrap;gap:20px}.st-div{display:none}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+/* ══ WRAITH SCOPED STYLES ══ */
+#wraith-overlay {display:none;position:fixed;inset:0;z-index:600;overflow:hidden;}
+#wraith-overlay.open {display:block;}
+#wraith-overlay-inner {width:100%;height:100%;overflow-y:auto;overflow-x:hidden;}
+/* Back button */
+.wraith-back-btn {position:fixed;top:16px;left:16px;z-index:700;background:rgba(0,0,0,0.8);color:#fff;border:1px solid #444;padding:7px 16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(8px);}
+.wraith-back-btn:hover {background:#000;border-color:#888;}
+
+/* ══════════════════════════════════════════════════════
+   SHARED RESET
+══════════════════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+/* ══════════════════════════════════════════════════════
+   SITE (MARKETING) VARIABLES — light theme
+══════════════════════════════════════════════════════ */
+:root{
+  --ink:#0a0a0a;--white:#ffffff;--off:#f7f6f3;
+  --mid:#999;--border:#e0ddd5;
+  --red:#c0392b;--green:#1a7a4a;--amber:#b8860b;
+  --serif:'DM Serif Display',serif;
+  --sans:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+  --shadow:0 2px 24px rgba(0,0,0,0.08);
+}
+
+/* ══════════════════════════════════════════════════════
+   SITE LAYER  (everything outside #dashboard-overlay)
+══════════════════════════════════════════════════════ */
+#wraith-overlay-inner{font-family:var(--sans);color:var(--ink);font-size:15px;line-height:1.6;overflow-x:hidden;background:var(--white)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:300;background:rgba(255,255,255,0.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{font-family:var(--serif);font-size:22px;color:var(--ink);letter-spacing:-0.5px}
+.nav-badge{background:var(--ink);color:var(--white);font-family:var(--mono);font-size:9px;padding:2px 7px;letter-spacing:2px}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{font-size:13px;color:var(--mid);text-decoration:none;transition:color 0.2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{background:var(--ink);color:var(--white);padding:8px 20px;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:opacity 0.2s;font-family:var(--sans)}
+.nav-cta:hover{opacity:0.85}
+/* LAUNCH DASHBOARD button in nav */
+.nav-launch{background:var(--red);color:var(--white);padding:8px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);letter-spacing:0.3px;transition:opacity 0.2s;display:flex;align-items:center;gap:7px}
+.nav-launch:hover{opacity:0.88}
+.nav-launch-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1.1s steps(1) infinite}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding:100px 40px 60px;background:var(--white);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;right:0;width:55%;height:100%;background:var(--off);clip-path:polygon(8% 0,100% 0,100% 100%,0 100%);z-index:0}
+.hero-inner{max-width:1200px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;position:relative;z-index:1}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--mid);margin-bottom:20px;text-transform:uppercase}
+.hero-h1{font-family:var(--serif);font-size:clamp(42px,5vw,68px);line-height:1.05;color:var(--ink);margin-bottom:24px;letter-spacing:-1px}
+.hero-h1 em{font-style:italic;color:var(--mid)}
+.hero-desc{font-size:17px;color:#555;line-height:1.7;margin-bottom:36px;max-width:440px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn-primary{background:var(--ink);color:var(--white);padding:14px 28px;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+.btn-primary:hover{background:#333}
+.btn-ghost{background:transparent;color:var(--ink);padding:14px 28px;font-size:14px;font-weight:500;border:1.5px solid var(--border);cursor:pointer;font-family:var(--sans);transition:all 0.2s}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-launch-hero{background:var(--red);color:var(--white);padding:14px 28px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:opacity 0.2s;display:flex;align-items:center;gap:8px}
+.btn-launch-hero:hover{opacity:0.88}
+.hero-trust{margin-top:48px;display:flex;gap:32px;align-items:center}
+.trust-stat{text-align:left}
+.trust-num{font-family:var(--serif);font-size:32px;color:var(--ink)}
+.trust-label{font-size:11px;color:var(--mid);letter-spacing:1px;text-transform:uppercase}
+
+/* Hero mini-dashboard preview */
+.hero-dash{background:var(--white);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:box-shadow 0.2s}
+.hero-dash:hover{box-shadow:0 8px 40px rgba(0,0,0,0.14)}
+.dash-header{background:var(--ink);color:var(--white);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.dash-title{font-family:var(--mono);font-size:11px;letter-spacing:2px}
+.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:#aaa}
+@keyframes blink{50%{opacity:0}}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:blink 1.2s steps(1) infinite}
+.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.dash-metric{background:var(--white);padding:14px;text-align:center}
+.dm-val{font-family:var(--serif);font-size:26px;color:var(--ink)}
+.dm-val.danger{color:var(--red)}.dm-val.safe{color:var(--green)}
+.dm-label{font-size:10px;color:var(--mid);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.dash-feed{padding:0}
+.feed-row{display:grid;grid-template-columns:80px 1fr 70px 56px;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);align-items:center;font-size:11px}
+.feed-row:hover{background:var(--off)}
+.fr-id{font-family:var(--mono);font-size:10px;color:var(--mid)}
+.fr-entity{color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-amount{font-family:var(--mono);font-size:11px;text-align:right}
+.dash-launch-hint{background:var(--ink);color:var(--white);text-align:center;padding:12px;font-family:var(--mono);font-size:10px;letter-spacing:3px;cursor:pointer;transition:background 0.2s}
+.dash-launch-hint:hover{background:#222}
+
+/* SECTION SHARED */
+section.site-section{padding:96px 40px;background:var(--white)}
+section.site-section.bg-off{background:var(--off)}
+section.site-section.bg-ink{background:var(--ink);color:var(--white)}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--mid);text-transform:uppercase;margin-bottom:14px}
+.section-h2{font-family:var(--serif);font-size:clamp(32px,4vw,52px);line-height:1.1;color:var(--ink);margin-bottom:20px;letter-spacing:-0.5px}
+.section-h2 em{font-style:italic;color:var(--mid)}
+.section-sub{font-size:17px;color:#666;max-width:560px;line-height:1.7}
+.bg-ink .section-label{color:#555}
+.bg-ink .section-h2{color:var(--white)}
+.bg-ink .section-h2 em{color:#777}
+.bg-ink .section-sub{color:#888}
+
+/* BADGE (shared) */
+.badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;letter-spacing:1px;font-family:var(--mono)}
+.badge.critical{background:#fef2f2;color:var(--red);border:1px solid #fca5a5}
+.badge.high{background:#fffbeb;color:var(--amber);border:1px solid #fcd34d}
+.badge.medium{background:#fff7ed;color:#c2690a;border:1px solid #fed7aa}
+.badge.low{background:#f0fdf4;color:var(--green);border:1px solid #86efac}
+
+/* PROBLEM */
+.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:56px;background:#222}
+.prob-card{background:var(--ink);padding:36px 28px}
+.prob-num{font-family:var(--serif);font-size:48px;color:var(--white);line-height:1;margin-bottom:8px}
+.prob-unit{font-size:13px;color:#555;margin-bottom:12px;font-family:var(--mono);letter-spacing:1px}
+.prob-desc{font-size:14px;color:#888;line-height:1.6}
+
+/* HOW IT WORKS */
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;position:relative}
+.steps-grid::before{content:'';position:absolute;top:32px;left:10%;width:80%;height:1px;background:var(--border);z-index:0}
+.step{padding:0 24px;position:relative;z-index:1}
+.step-num{width:64px;height:64px;border:1.5px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;color:var(--ink);margin-bottom:20px}
+.step-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.step-desc{font-size:13px;color:#777;line-height:1.6}
+.step-tag{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:9px;padding:2px 8px;border:1px solid var(--border);color:var(--mid);letter-spacing:1px}
+
+/* FEATURES */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+.feat-card{background:var(--white);border:1px solid var(--border);padding:32px;transition:box-shadow 0.2s}
+.feat-card:hover{box-shadow:var(--shadow)}
+.feat-icon{width:40px;height:40px;background:var(--ink);display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:18px}
+.feat-title{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.feat-desc{font-size:13px;color:#777;line-height:1.7}
+.feat-tag{margin-top:16px;font-family:var(--mono);font-size:9px;color:var(--mid);letter-spacing:2px}
+
+/* PRICING */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:56px;background:var(--border)}
+.price-card{background:var(--white);padding:40px 32px;position:relative}
+.price-card.featured{background:var(--ink);color:var(--white)}
+.price-badge-top{position:absolute;top:20px;right:20px;background:#4ade80;color:#052e16;font-size:9px;font-weight:700;padding:3px 8px;font-family:var(--mono);letter-spacing:1px}
+.price-tier{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--mid);margin-bottom:16px;text-transform:uppercase}
+.price-card.featured .price-tier{color:#888}
+.price-val{font-family:var(--serif);font-size:48px;color:var(--ink);line-height:1;margin-bottom:4px}
+.price-card.featured .price-val,.price-card.featured .price-period{color:var(--white)}
+.price-period{font-size:12px;color:var(--mid);margin-bottom:24px}
+.price-card.featured .price-period{color:#888}
+.price-desc{font-size:13px;color:#666;margin-bottom:28px;line-height:1.6}
+.price-card.featured .price-desc{color:#aaa}
+.price-features{list-style:none;margin-bottom:32px}
+.price-features li{font-size:13px;color:#555;padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.price-card.featured .price-features li{color:#ccc;border-color:#333}
+.price-features li::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.price-card.featured .price-features li::before{background:#4ade80}
+.price-cta{width:100%;padding:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);border:1.5px solid var(--ink);background:transparent;color:var(--ink);transition:all 0.2s}
+.price-cta:hover{background:var(--ink);color:var(--white)}
+.price-card.featured .price-cta{background:var(--white);color:var(--ink);border-color:var(--white)}
+
+/* API */
+.api-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.api-code{background:#111;border:1px solid #333;padding:28px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#ccc;overflow-x:auto}
+.cc{color:#555}.ck{color:#9cdcfe}.cs{color:#ce9178}.cn{color:#b5cea8}.cw{color:#569cd6}
+
+/* TESTIMONIALS */
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
+.testi-card{background:var(--white);border:1px solid var(--border);padding:32px}
+.testi-quote{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--ink);margin-bottom:20px;font-style:italic}
+.testi-stars{color:var(--amber);font-size:13px;margin-bottom:16px;letter-spacing:2px}
+
+/* FINAL CTA */
+.final-cta{background:var(--ink);color:var(--white);padding:120px 40px;text-align:center}
+.cta-h2{font-family:var(--serif);font-size:clamp(36px,5vw,64px);color:var(--white);margin-bottom:16px;letter-spacing:-1px}
+.cta-h2 em{font-style:italic;color:#777}
+.cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+
+/* FOOTER */
+footer{background:#050505;color:#555;padding:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-brand{font-family:var(--serif);font-size:20px;color:#888}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-size:12px;color:#444;text-decoration:none;transition:color 0.2s}
+.footer-links a:hover{color:#aaa}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);max-width:460px;width:100%;padding:40px;position:relative}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mid)}
+.modal-h3{font-family:var(--serif);font-size:28px;margin-bottom:8px}
+.modal-sub{font-size:13px;color:var(--mid);margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:6px}
+.form-input,.form-select{width:100%;padding:11px 14px;border:1.5px solid var(--border);font-family:var(--sans);font-size:14px;outline:none;background:var(--white);transition:border-color 0.2s}
+.form-input:focus,.form-select:focus{border-color:var(--ink)}
+.form-submit{width:100%;background:var(--ink);color:var(--white);padding:14px;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);margin-top:8px;transition:opacity 0.2s}
+.form-submit:hover{opacity:0.85}
+.form-note{font-size:11px;color:var(--mid);text-align:center;margin-top:12px}
+
+/* responsive */
+@media(max-width:900px){
+  .hero-inner,.api-grid{grid-template-columns:1fr}
+  .hero::before{display:none}
+  .problem-grid,.feat-grid,.price-grid,.testi-grid{grid-template-columns:1fr}
+  .steps-grid{grid-template-columns:1fr 1fr}
+  .steps-grid::before{display:none}
+  nav{padding:0 16px}
+  section.site-section{padding:64px 20px}
+  .nav-links{display:none}
+}
+
+/* ══════════════════════════════════════════════════════
+   DASHBOARD OVERLAY — full-screen analyst tool
+══════════════════════════════════════════════════════ */
+#dashboard-overlay{
+  position:fixed;inset:0;z-index:400;
+  background:#000;
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+#dashboard-overlay.open{display:flex}
+
+/* Dashboard fonts + vars (scoped inside overlay) */
+#dashboard-overlay{
+  --d-black:#000;--d-white:#fff;--d-off:#f0f0f0;
+  --d-lg:#d0d0d0;--d-mg:#888;--d-dg:#333;--d-ch:#111;
+  --d-mono:'IBM Plex Mono',monospace;--d-disp:'Bebas Neue',sans-serif;
+}
+
+/* Grain overlay */
+#dashboard-overlay::after{
+  content:'';position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:1;opacity:0.5;
+}
+
+/* TOPBAR */
+.d-topbar{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:28px;padding:0 22px;height:52px;border-bottom:1px solid var(--d-dg);background:var(--d-black);position:relative;z-index:2}
+.d-brand-name{font-family:var(--d-disp);font-size:24px;letter-spacing:3px;color:var(--d-white);line-height:1}
+.d-brand-sub{font-size:8px;letter-spacing:4px;color:var(--d-mg)}
+.d-sys-name{font-family:var(--d-disp);font-size:30px;letter-spacing:6px;color:var(--d-white);text-align:center}
+.d-sys-sub{font-size:8px;letter-spacing:3px;color:var(--d-mg);text-align:center;margin-top:-2px}
+.d-status{display:flex;align-items:center;gap:14px;font-size:9px;letter-spacing:2px;color:var(--d-mg);font-family:var(--d-mono)}
+.d-live-dot{width:6px;height:6px;border-radius:50%;background:var(--d-white);animation:blink 1s steps(1) infinite}
+.d-clock{font-size:10px;color:var(--d-lg);letter-spacing:2px;font-weight:600;border:1px solid var(--d-dg);padding:4px 10px;font-family:var(--d-mono)}
+.d-close-btn{background:transparent;border:1px solid #444;color:#888;padding:5px 14px;font-family:var(--d-mono);font-size:9px;letter-spacing:2px;cursor:pointer;transition:all 0.15s}
+.d-close-btn:hover{border-color:var(--d-white);color:var(--d-white)}
+
+/* TICKER */
+.d-ticker{border-top:1px solid var(--d-dg);border-bottom:1px solid var(--d-dg);overflow:hidden;height:24px;display:flex;align-items:center;background:var(--d-ch);position:relative;z-index:2;flex-shrink:0}
+.d-ticker-inner{display:flex;gap:60px;white-space:nowrap;animation:dticker 35s linear infinite;font-family:var(--d-mono)}
+.d-ticker-inner span{font-size:9px;letter-spacing:2px;color:var(--d-mg)}
+.d-ticker-inner strong{color:var(--d-white)}
+@keyframes dticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* MAIN LAYOUT */
+.d-layout{display:grid;grid-template-columns:220px 1fr 260px;flex:1;overflow:hidden;position:relative;z-index:2}
+.d-col{overflow-y:auto;overflow-x:hidden}
+.d-col::-webkit-scrollbar{width:3px}
+.d-col::-webkit-scrollbar-thumb{background:var(--d-dg)}
+
+/* LEFT PANEL */
+.d-left{border-right:1px solid var(--d-dg);padding:16px 0;font-family:var(--d-mono)}
+.dp-section{padding:0 16px;margin-bottom:24px}
+.dp-label{font-size:8px;letter-spacing:4px;color:var(--d-mg);margin-bottom:10px;border-bottom:1px solid var(--d-ch);padding-bottom:6px}
+.d-stat-block{border:1px solid var(--d-dg);padding:12px;margin-bottom:6px;position:relative;overflow:hidden}
+.d-stat-val{font-family:var(--d-disp);font-size:38px;color:var(--d-white);line-height:1;letter-spacing:2px}
+.d-stat-label{font-size:8px;letter-spacing:3px;color:var(--d-mg);margin-bottom:4px}
+.d-stat-delta{font-size:9px;color:var(--d-mg);margin-top:2px}
+.d-mini-chart{display:flex;align-items:flex-end;gap:2px;height:28px;margin-top:8px}
+.d-mini-bar{flex:1;background:var(--d-dg);min-height:2px;transition:height 0.3s}
+
+/* Risk breakdown */
+.d-risk-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.d-risk-label{font-size:8px;letter-spacing:2px;color:var(--d-mg);width:50px;flex-shrink:0}
+.d-risk-bar{flex:1;height:2px;background:var(--d-dg)}
+.d-risk-fill{height:100%;background:var(--d-white);transition:width 0.5s}
+.d-risk-count{font-size:9px;color:var(--d-white);width:22px;text-align:right}
+
+/* Model bars */
+.d-model-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.d-model-name{font-size:8px;letter-spacing:1px;color:var(--d-mg);width:72px;flex-shrink:0}
+.d-model-bar{flex:1;height:6px;background:var(--d-ch);border:1px solid var(--d-dg)}
+.d-model-fill{height:100%;background:var(--d-white);transition:width 1s}
+.d-model-pct{font-size:9px;color:var(--d-white);width:30px;text-align:right}
+
+/* Rules */
+.d-rule-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--d-ch);cursor:pointer;transition:background 0.15s}
+.d-rule-row:hover{background:var(--d-ch)}
+.d-toggle{width:28px;height:14px;border:1px solid var(--d-dg);position:relative;flex-shrink:0;transition:border-color 0.2s}
+.d-toggle.on{border-color:var(--d-white)}
+.d-toggle::after{content:'';position:absolute;width:10px;height:10px;background:var(--d-dg);top:1px;left:1px;transition:all 0.2s}
+.d-toggle.on::after{left:15px;background:var(--d-white)}
+.d-rule-name{flex:1;font-size:9px;color:var(--d-mg);letter-spacing:1px}
+.d-rule-row.on .d-rule-name{color:var(--d-white)}
+.d-rule-hits{font-family:var(--d-disp);font-size:16px;color:var(--d-white)}
+
+/* CENTER PANEL */
+.d-center{padding:16px 20px;font-family:var(--d-mono)}
+.d-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.d-sec-title{font-size:8px;letter-spacing:5px;color:var(--d-mg)}
+
+/* Score cards */
+.d-score-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+.d-score-card{border:1px solid var(--d-dg);padding:12px 8px;text-align:center;transition:border-color 0.2s;cursor:default}
+.d-score-card:hover{border-color:var(--d-white)}
+.d-sc-label{font-size:8px;letter-spacing:2px;color:var(--d-mg);margin-bottom:6px}
+.d-sc-val{font-family:var(--d-disp);font-size:28px;color:var(--d-white);line-height:1}
+.d-sc-unit{font-size:9px;color:var(--d-mg);margin-top:2px}
+
+/* TX table */
+.d-tx-table{width:100%;border-collapse:collapse;margin-bottom:20px}
+.d-tx-table thead tr{border-bottom:1px solid var(--d-dg)}
+.d-tx-table th{font-size:8px;letter-spacing:3px;color:var(--d-mg);font-weight:400;padding:0 8px 8px;text-align:left}
+.d-tx-table td{padding:9px 8px;font-size:10px;border-bottom:1px solid var(--d-ch);vertical-align:middle}
+.d-tx-table tr:hover td{background:var(--d-ch)}
+.d-tx-table tr.d-flagged td{border-left:2px solid var(--d-white)}
+.d-tx-table tr.d-new-row{animation:dRowIn 0.3s ease}
+@keyframes dRowIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.d-tx-id{color:var(--d-lg);font-size:10px;font-weight:600}
+.d-score-cell{display:flex;align-items:center;gap:5px}
+.d-score-pip{width:28px;height:4px;background:var(--d-ch);border:1px solid var(--d-dg)}
+.d-score-pip-fill{height:100%;background:var(--d-white)}
+.d-score-num{font-family:var(--d-disp);font-size:16px;color:var(--d-white);line-height:1}
+
+/* Dashboard badge */
+.d-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border:1px solid;letter-spacing:2px;font-family:var(--d-mono)}
+.d-badge.critical{border-color:var(--d-white);color:var(--d-white);background:rgba(255,255,255,0.1)}
+.d-badge.high{border-color:var(--d-lg);color:var(--d-lg)}
+.d-badge.medium{border-color:var(--d-mg);color:var(--d-mg)}
+.d-badge.low{border-color:var(--d-dg);color:var(--d-dg)}
+
+/* Charts */
+.d-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.d-chart-card{border:1px solid var(--d-dg);padding:14px}
+.d-chart-title{font-size:8px;letter-spacing:3px;color:var(--d-mg);margin-bottom:10px}
+
+/* AML */
+.d-aml-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+
+/* Dashboard buttons */
+.d-btn{background:transparent;border:1px solid var(--d-dg);color:var(--d-mg);padding:5px 12px;font-family:var(--d-mono);font-size:9px;letter-spacing:2px;cursor:pointer;transition:all 0.15s}
+.d-btn:hover{border-color:var(--d-white);color:var(--d-white)}
+.d-btn.primary{border-color:var(--d-white);color:var(--d-white)}
+.d-btn.primary:hover{background:var(--d-white);color:var(--d-black)}
+
+/* RIGHT PANEL */
+.d-right{border-left:1px solid var(--d-dg);padding:0;font-family:var(--d-mono)}
+.d-alert-item{padding:12px 16px;border-bottom:1px solid var(--d-ch);animation:dAlertIn 0.3s ease}
+@keyframes dAlertIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:translateX(0)}}
+.d-alert-item.crit{border-left:2px solid var(--d-white)}
+.d-alert-item.warn{border-left:2px solid var(--d-mg)}
+.d-alert-item.info{border-left:2px solid var(--d-dg)}
+.d-alert-type{font-size:8px;letter-spacing:3px;margin-bottom:4px}
+.d-alert-type.crit{color:var(--d-white)}.d-alert-type.warn{color:var(--d-mg)}.d-alert-type.info{color:var(--d-dg)}
+.d-alert-msg{font-size:10px;color:var(--d-lg);line-height:1.5;margin-bottom:3px}
+.d-alert-time{font-size:8px;color:var(--d-dg)}
+.d-right-label{font-size:8px;letter-spacing:4px;color:var(--d-mg);padding:14px 16px 8px;border-bottom:1px solid var(--d-ch)}
+
+/* Geo risk */
+.d-geo-row{display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--d-ch)}
+.d-geo-flag{color:var(--d-lg);font-size:10px;width:12px}
+.d-geo-name{flex:1;font-size:9px;letter-spacing:1px;color:var(--d-mg)}
+.d-geo-val{font-family:var(--d-disp);font-size:18px;color:var(--d-white)}
+
+/* Network canvas */
+#dNetCanvas{display:block;width:100%;height:180px;border-bottom:1px solid var(--d-dg)}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR BACKDROP -->
+<div class="sb-backdrop" id="sbBack" onclick="closeSB()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-header">
+    <div>
+      <div class="sb-logo">ParadoxAI<br>Lab</div>
+      <div class="sb-tagline">Act on complexity</div>
+    </div>
+    <button class="sb-close" onclick="closeSB()">✕</button>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">// Navigate</div>
+    <a class="sb-nav-link" href="#home" onclick="closeSB()">Home <span class="arr">→</span></a>
+    <a class="sb-nav-link" href="#mission" onclick="closeSB()">Mission <span class="arr">→</span></a>
+    <a class="sb-nav-link" href="#products" onclick="closeSB()">Products <span class="arr">→</span></a>
+    <a class="sb-nav-link" href="#approach" onclick="closeSB()">Approach <span class="arr">→</span></a>
+    <a class="sb-nav-link" href="#about" onclick="closeSB()">About <span class="arr">→</span></a>
+    <a class="sb-nav-link" href="#contact" onclick="closeSB()">Contact <span class="arr">→</span></a>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">// Products</div>
+    <a class="sb-product" href="#" onclick="openWraith();return false" onclick="closeSB()">
+      <div class="sb-icon">🕵</div>
+      <div>
+        <div class="sb-product-name">WRAITH</div>
+        <div class="sb-product-cat">Fraud Intelligence Platform</div>
+        <div class="sb-badge beta"><span class="sb-badge-dot"></span>LIVE BETA</div>
+      </div>
+    </a>
+    <a class="sb-product" href="https://meridian-nine-drab.vercel.app/" target="_blank" onclick="closeSB()">
+      <div class="sb-icon">⚖</div>
+      <div>
+        <div class="sb-product-name">MERIDIAN</div>
+        <div class="sb-product-cat">Decision Intelligence Platform</div>
+        <div class="sb-badge live"><span class="sb-badge-dot"></span>LIVE</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">// Quick access</div>
+    <a class="sb-qlink" href="#" onclick="openWraith();return false" onclick="closeSB()">WRAITH Dashboard <span>↗</span></a>
+    <a class="sb-qlink" href="https://meridian-nine-drab.vercel.app/workspace" target="_blank" onclick="closeSB()">Meridian Workspace <span>↗</span></a>
+  </div>
+
+  <div class="sb-footer">
+    <div class="sb-status-row">
+      <div class="sb-dot"></div>
+      <div class="sb-status-text">All systems operational</div>
+    </div>
+    <div class="sb-copy">© 2025 ParadoxAI Lab</div>
+  </div>
+</aside>
+
+<!-- SCROLL PROGRESS -->
+<div class="scroll-bar" id="scrollBar"></div>
+
+<!-- NAV -->
+<nav id="topnav">
+  <div class="nav-left">
+    <button class="hbg" id="hbg" onclick="toggleSB()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="nav-brand" href="#home">ParadoxAI Lab <span class="nav-badge">LAB</span></a>
+  </div>
+  <div class="nav-links">
+    <a href="#mission">Mission</a>
+    <a href="#products">Products</a>
+    <a href="#approach">Approach</a>
+    <a href="#about">About</a>
+  </div>
+  <button class="nav-cta" onclick="openModal()">Get in touch →</button>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <span>PARADOXAI LAB · <strong>ACT ON COMPLEXITY</strong></span>
+    <span>WRAITH · <strong>FRAUD INTELLIGENCE · LIVE BETA</strong></span>
+    <span>MERIDIAN · <strong>DECISION INTELLIGENCE · LIVE</strong></span>
+    <span>5-MODEL ENSEMBLE · <strong>97.3% PRECISION</strong></span>
+    <span>INFERENCE · <strong>&lt;50MS</strong></span>
+    <span>APPLIED AI · <strong>SINCE 2024</strong></span>
+    <span>PARADOXAI LAB · <strong>ACT ON COMPLEXITY</strong></span>
+    <span>WRAITH · <strong>FRAUD INTELLIGENCE · LIVE BETA</strong></span>
+    <span>MERIDIAN · <strong>DECISION INTELLIGENCE · LIVE</strong></span>
+    <span>5-MODEL ENSEMBLE · <strong>97.3% PRECISION</strong></span>
+    <span>INFERENCE · <strong>&lt;50MS</strong></span>
+    <span>APPLIED AI · <strong>SINCE 2024</strong></span>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-in">
+      <div>
+        <div class="hero-eye">ParadoxAI Lab · Applied AI Research</div>
+        <h1 class="hero-h1">Act on <em>complexity.</em><br>Build with clarity.</h1>
+        <p class="hero-desc">We build production-grade AI systems that turn messy, high-stakes problems into decisive, real-time intelligence. Fraud. Decisions. What's next.</p>
+        <div class="hero-actions">
+          <button class="btn-p" onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})">Explore products →</button>
+          <button class="btn-g" onclick="document.getElementById('mission').scrollIntoView({behavior:'smooth'})">Our mission</button>
+        </div>
+        <div class="hero-stats">
+          <div><div class="st-num">2</div><div class="st-lbl">Live products</div></div>
+          <div class="st-div"></div>
+          <div><div class="st-num">&lt;50ms</div><div class="st-lbl">Inference time</div></div>
+          <div class="st-div"></div>
+          <div><div class="st-num">97.3%</div><div class="st-lbl">Model precision</div></div>
+        </div>
+      </div>
+      <div class="hero-products">
+        <a class="hp-card" href="#" onclick="openWraith();return false">
+          <div class="hp-ico">🕵</div>
+          <div style="flex:1">
+            <div class="hp-name">WRAITH</div>
+            <div class="hp-desc">Real-time fraud intelligence. 5 ML models, 50ms decisions, built for banks and fintechs.</div>
+            <div class="hp-tags">
+              <span class="hp-tag on">Fraud Detection</span>
+              <span class="hp-tag on">AML</span>
+              <span class="hp-tag">BETA</span>
+            </div>
+          </div>
+          <div class="hp-arr">→</div>
+        </a>
+        <a class="hp-card" href="https://meridian-nine-drab.vercel.app/" target="_blank">
+          <div class="hp-ico lt">⚖</div>
+          <div style="flex:1">
+            <div class="hp-name">MERIDIAN</div>
+            <div class="hp-desc">Decision intelligence for founders and executives. Structure any high-stakes decision in 30 seconds.</div>
+            <div class="hp-tags">
+              <span class="hp-tag on">Decision AI</span>
+              <span class="hp-tag on">Strategy</span>
+              <span class="hp-tag">LIVE</span>
+            </div>
+          </div>
+          <div class="hp-arr">→</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION -->
+  <section class="sec s-mission" id="mission">
+    <div class="si">
+      <div class="sec-lbl">Our mission</div>
+      <h2 class="sec-h2">Intelligence where it <em>matters most</em></h2>
+      <div class="mission-grid">
+        <div class="pillars">
+          <div class="pillar"><div class="pillar-t">Real-time, not retrospective</div><div class="pillar-d">Decisions made after the fact are autopsies. We build systems that act at the moment of truth — not days later when the money is already gone.</div></div>
+          <div class="pillar"><div class="pillar-t">Ensemble thinking</div><div class="pillar-d">No single model is right all the time. Our systems combine multiple models, rules, and signals — then synthesise them into one clear output.</div></div>
+          <div class="pillar"><div class="pillar-t">Explainability built in</div><div class="pillar-d">A black box is a liability, not a product. Every score and verdict we produce carries a chain of reasoning you can inspect and audit.</div></div>
+          <div class="pillar"><div class="pillar-t">Production from day one</div><div class="pillar-d">We don't build demos. WRAITH processes real transactions. Meridian analyses real decisions. Everything ships to run at scale, today.</div></div>
+        </div>
+        <blockquote class="mq">
+          "The most dangerous complexity is the kind that looks simple. We build AI that holds the full picture — so you can act on it."
+          <cite>— ParadoxAI Lab</cite>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="sec s-products" id="products">
+    <div class="si">
+      <div class="sec-lbl">Products</div>
+      <h2 class="sec-h2">Two platforms. <em>One lab.</em></h2>
+      <p class="sec-sub">Each product targets a different dimension of high-stakes complexity — financial risk and strategic decision-making.</p>
+    </div>
+    <div class="prods-grid">
+      <div class="pc">
+        <div class="pc-n">01</div>
+        <div class="pc-ico">🕵</div>
+        <div class="pc-tag beta">BETA</div>
+        <div class="pc-name">WRAITH</div>
+        <div class="pc-full">Fraud Intelligence Platform</div>
+        <p class="pc-desc">WRAITH scores every transaction in under 50ms using five ML models — Isolation Forest, Gradient Boost, LSTM, Autoencoder, and Expert Rules — running in parallel.</p>
+        <ul class="pc-feats">
+          <li>Real-time transaction scoring &lt;50ms</li>
+          <li>5-model weighted ensemble ML</li>
+          <li>AML — smurfing, layering, round-tripping</li>
+          <li>Auto SAR generation</li>
+          <li>Live analyst dashboard</li>
+          <li>REST API + webhooks</li>
+        </ul>
+        <a class="pc-cta" href="#" onclick="openWraith();return false">Explore WRAITH →</a>
+      </div>
+      <div class="pc">
+        <div class="pc-n">02</div>
+        <div class="pc-ico">⚖</div>
+        <div class="pc-tag live">LIVE</div>
+        <div class="pc-name">MERIDIAN</div>
+        <div class="pc-full">Decision Intelligence Platform</div>
+        <p class="pc-desc">Meridian structures any high-stakes decision in 30 seconds — options, risks, blind spots, and a direct verdict. Built for founders, executives, and operators who decide alone, under pressure.</p>
+        <ul class="pc-feats">
+          <li>Decision structured in 30 seconds</li>
+          <li>2–4 options with upsides & downsides</li>
+          <li>Reframed question + core tension</li>
+          <li>Direct recommendation + flip condition</li>
+          <li>48-hour action item</li>
+          <li>Export PDF + Word</li>
+        </ul>
+        <a class="pc-cta" href="https://meridian-nine-drab.vercel.app/" target="_blank">Explore Meridian →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- APPROACH -->
+  <section class="sec s-approach" id="approach">
+    <div class="si">
+      <div class="sec-lbl">How we work</div>
+      <h2 class="sec-h2">Built different, <em>by design</em></h2>
+      <p class="sec-sub">We don't follow the AI playbook. We define the problem first, then the model, then the product.</p>
+      <div class="approach-grid">
+        <div class="ac"><div class="ac-n">01</div><div class="ac-t">Problem first</div><div class="ac-d">Every product starts with a specific, painful, unsolved problem — not a model capability looking for a use case. We work backwards from the decision that needs to be made.</div></div>
+        <div class="ac"><div class="ac-n">02</div><div class="ac-t">Ensemble everything</div><div class="ac-d">We combine multiple models, rules, and reasoning strategies for every output. Disagreement between systems surfaces the signal that matters most.</div></div>
+        <div class="ac"><div class="ac-n">03</div><div class="ac-t">Ship to production</div><div class="ac-d">Research without deployment is theory. Every system we build is designed for real-world use from day one — latency constraints, compliance requirements, and all.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="sec s-about" id="about">
+    <div class="si">
+      <div class="sec-lbl">About</div>
+      <h2 class="sec-h2">A lab that <em>ships</em></h2>
+      <div class="about-grid">
+        <div class="about-text">
+          <p>ParadoxAI Lab is an applied AI research studio building production-grade intelligence systems. We focus on domains where the stakes are high, the data is messy, and the decisions are time-sensitive.</p>
+          <p>Our work sits at the intersection of machine learning, real-time systems, and domain expertise. We don't build AI for AI's sake — we build it because a specific problem demands it.</p>
+          <p>WRAITH is our fraud intelligence platform. Meridian is our decision intelligence platform. Both are live, both are being used, and both reflect the same underlying philosophy: complexity is not the enemy. Opacity is.</p>
+        </div>
+        <div>
+          <div class="val-row"><div class="val-name">Transparency</div><div class="val-note">Every model output is explainable</div></div>
+          <div class="val-row"><div class="val-name">Speed</div><div class="val-note">Inference in milliseconds, not minutes</div></div>
+          <div class="val-row"><div class="val-name">Precision</div><div class="val-note">97.3% across our ensemble systems</div></div>
+          <div class="val-row"><div class="val-name">Ownership</div><div class="val-note">We build, maintain, and evolve our own models</div></div>
+          <div class="val-row"><div class="val-name">Shipping</div><div class="val-note">Research that doesn't ship doesn't count</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta" id="contact">
+    <div class="cta-h2">Ready to <em>act</em><br>on complexity?</div>
+    <p class="cta-sub">Explore our products or get in touch with the team.</p>
+    <div class="cta-actions">
+      <a href="#" onclick="openWraith();return false" style="text-decoration:none"><button class="btn-p" style="padding:15px 36px;font-size:15px">Explore WRAITH →</button></a>
+      <a href="https://meridian-nine-drab.vercel.app/" target="_blank" style="text-decoration:none"><button class="btn-g" style="padding:15px 36px;font-size:15px;border-color:#2a2a2a;color:#666">Explore Meridian →</button></a>
+      <button class="btn-g" style="padding:15px 36px;font-size:15px;border-color:#2a2a2a;color:#666" onclick="openModal()">Contact us →</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">ParadoxAI Lab</div>
+    <div class="footer-links">
+      <a href="#mission">Mission</a>
+      <a href="#products">Products</a>
+      <a href="#approach">Approach</a>
+      <a href="#about">About</a>
+      <a href="#" onclick="openWraith();return false">WRAITH</a>
+      <a href="https://meridian-nine-drab.vercel.app/" target="_blank">Meridian</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+    <div class="footer-copy">© 2025 ParadoxAI Lab. All rights reserved.</div>
+  </footer>
+
+</div><!-- end .page -->
+
+<!-- BACK TO TOP -->
+<button class="btt" id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+<!-- CONTACT MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal()">✕</button>
+    <div class="modal-h">Get in touch</div>
+    <div class="modal-s">Tell us what you're building. We'll respond within 24 hours.</div>
+    <div class="fr"><label class="fl">Full name</label><input class="fi" type="text" placeholder="Your name"></div>
+    <div class="fr"><label class="fl">Work email</label><input class="fi" type="email" placeholder="you@company.com"></div>
+    <div class="fr">
+      <label class="fl">Interested in</label>
+      <select class="fsel">
+        <option>WRAITH — Fraud Intelligence</option>
+        <option>Meridian — Decision Intelligence</option>
+        <option>Partnership / Research</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="fr"><label class="fl">Message</label><textarea class="fta" placeholder="Tell us about your use case..."></textarea></div>
+    <button class="fsub" onclick="submitForm()">Send message →</button>
+    <p class="fn">We respond within one business day.</p>
+  </div>
+</div>
+
+<script>
+/* Sidebar */
+const sidebar=document.getElementById('sidebar');
+const sbBack=document.getElementById('sbBack');
+const hbg=document.getElementById('hbg');
+function openSB(){sidebar.classList.add('open');sbBack.classList.add('open');hbg.classList.add('open');document.body.style.overflow='hidden'}
+function closeSB(){sidebar.classList.remove('open');sbBack.classList.remove('open');hbg.classList.remove('open');document.body.style.overflow=''}
+function toggleSB(){sidebar.classList.contains('open')?closeSB():openSB()}
+
+/* Modal */
+function openModal(){document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}
+function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow=''}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+function submitForm(){
+  const btn=document.querySelector('.fsub');
+  btn.textContent='Message sent ✓';btn.style.background='#1a7a4a';
+  setTimeout(closeModal,1600);
+}
+
+/* ESC */
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSB();closeModal()}});
+
+/* Scroll: progress + back-to-top + active nav */
+const secs=['home','mission','products','approach','about','contact'];
+window.addEventListener('scroll',()=>{
+  const sy=window.scrollY;
+  const tot=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('scrollBar').style.width=(sy/tot*100)+'%';
+  document.getElementById('btt').classList.toggle('show',sy>500);
+  let cur='';
+  secs.forEach(id=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<=90)cur=id});
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+  document.querySelectorAll('#sidebar .sb-nav-link').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+});
+
+/* Smooth scroll */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}
+  });
+});
+</script>
+
+<div id="wraith-overlay">
+  <button class="wraith-back-btn" onclick="closeWraith()">← BACK TO PARADOXAI LAB</button>
+  <div id="wraith-overlay-inner">
+<!-- ═══════════════════ NAVIGATION ═══════════════════ -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">WRAITH</div>
+    <div class="nav-badge">BETA</div>
+  </div>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#api">API</a>
+    <a href="#" onclick="openModal();return false">Sign in</a>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="nav-launch" onclick="openDashboard()">
+      <span class="nav-launch-dot"></span>OPEN LIVE DASHBOARD
+    </button>
+    <button class="nav-cta" onclick="openModal()">Free trial →</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section class="hero" id="home">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">ParadoxAI Lab · Fraud Intelligence Platform</div>
+      <h1 class="hero-h1">Stop fraud <em>before</em><br>it costs you</h1>
+      <p class="hero-desc">WRAITH scores every transaction in under 50ms using five ML models running in parallel. Built for banks, fintechs, and e-commerce — blocks fraud, not customers.</p>
+      <div class="hero-actions">
+        <button class="btn-launch-hero" onclick="openDashboard()">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1.1s steps(1) infinite"></span>
+          Launch Live Dashboard
+        </button>
+        <button class="btn-primary" onclick="openModal()">Start free trial</button>
+        <button class="btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works ↓</button>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-stat"><div class="trust-num" id="heroScored">12,847</div><div class="trust-label">transactions scored</div></div>
+        <div style="width:1px;height:40px;background:var(--border)"></div>
+        <div class="trust-stat"><div class="trust-num">97.3%</div><div class="trust-label">precision rate</div></div>
+        <div style="width:1px;height:40px;background:var(--border)"></div>
+        <div class="trust-stat"><div class="trust-num">&lt;50ms</div><div class="trust-label">decision time</div></div>
+      </div>
+    </div>
+    <!-- Hero preview of dashboard -->
+    <div class="hero-dash" onclick="openDashboard()">
+      <div class="dash-header">
+        <span class="dash-title">WRAITH · LIVE FEED</span>
+        <span class="dash-live"><span class="live-dot"></span>REAL-TIME</span>
+      </div>
+      <div class="dash-metrics">
+        <div class="dash-metric"><div class="dm-val danger" id="hCritical">0</div><div class="dm-label">Critical</div></div>
+        <div class="dash-metric"><div class="dm-val safe" id="hCleared">0</div><div class="dm-label">Cleared</div></div>
+        <div class="dash-metric"><div class="dm-val" id="hTotal">0</div><div class="dm-label">Total</div></div>
+      </div>
+      <div class="dash-feed" id="heroFeed"></div>
+      <div class="dash-launch-hint">▶ CLICK TO OPEN FULL ANALYST DASHBOARD</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PROBLEM ═══════════════════ -->
+<section class="site-section bg-ink">
+  <div class="section-inner">
+    <div class="section-label">The problem</div>
+    <h2 class="section-h2">Financial fraud is a <em>$485 billion</em> problem</h2>
+    <div class="problem-grid">
+      <div class="prob-card"><div class="prob-num">$485B</div><div class="prob-unit">lost globally per year</div><div class="prob-desc">Global payment fraud losses hit a record in 2023 and grow 15% year-on-year as attackers get smarter and faster.</div></div>
+      <div class="prob-card"><div class="prob-num">72hrs</div><div class="prob-unit">average detection time</div><div class="prob-desc">Legacy rule-based systems catch fraud days after money is gone. WRAITH catches it before the transaction settles.</div></div>
+      <div class="prob-card"><div class="prob-num">1 in 5</div><div class="prob-unit">legitimate customers blocked</div><div class="prob-desc">Overly aggressive systems block real customers. WRAITH's ensemble ML keeps false positives under 0.8%.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
+<section class="site-section bg-off" id="how">
+  <div class="section-inner">
+    <div class="section-label">How it works</div>
+    <h2 class="section-h2">Four steps from <em>transaction</em> to decision</h2>
+    <p class="section-sub">WRAITH processes every transaction through a real-time ML pipeline — no human in the loop, no delay.</p>
+    <div class="steps-grid">
+      <div class="step"><div class="step-num">01</div><div class="step-title">Transaction arrives</div><div class="step-desc">Your payment API sends a transaction to WRAITH via webhook or REST. Amount, device, location, account — captured instantly.</div><div class="step-tag">≤ 2ms ingestion</div></div>
+      <div class="step"><div class="step-num">02</div><div class="step-title">16 features computed</div><div class="step-desc">Velocity, z-score, geo-risk, device novelty, structuring probe, time-of-day, channel risk — all enriched from account history in real time.</div><div class="step-tag">real-time enrichment</div></div>
+      <div class="step"><div class="step-num">03</div><div class="step-title">5 models score in parallel</div><div class="step-desc">Isolation Forest, Gradient Boost, LSTM, Autoencoder, and Rule Engine all vote simultaneously. Weighted ensemble produces a 0–100 risk score.</div><div class="step-tag">ensemble ml</div></div>
+      <div class="step"><div class="step-num">04</div><div class="step-title">Decision + action</div><div class="step-desc">Low → pass. Medium → log. High → review. Critical → block + alert + SAR. Your system receives the verdict in under 50ms.</div><div class="step-tag">≤ 50ms decision</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FEATURES ═══════════════════ -->
+<section class="site-section" id="features">
+  <div class="section-inner">
+    <div class="section-label">Product features</div>
+    <h2 class="section-h2">Everything you need to <em>fight fraud</em></h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-icon">⚡</div><div class="feat-title">Real-time scoring</div><div class="feat-desc">Every transaction scored in under 50ms. No batch processing, no delays. Your customers never wait while fraud is being evaluated.</div><div class="feat-tag">50ms · REST + WEBHOOK</div></div>
+      <div class="feat-card"><div class="feat-icon">🧠</div><div class="feat-title">5-model ensemble</div><div class="feat-desc">Isolation Forest, Gradient Boosting, LSTM, Autoencoder, and Expert Rules all vote on every transaction. Higher accuracy than any single model.</div><div class="feat-tag">97.3% PRECISION</div></div>
+      <div class="feat-card"><div class="feat-icon">🏦</div><div class="feat-title">AML compliance</div><div class="feat-desc">Automatic detection of smurfing, layering, and round-tripping. SAR reports auto-generated when thresholds are exceeded.</div><div class="feat-tag">FATF · FINCEN</div></div>
+      <div class="feat-card"><div class="feat-icon">🔌</div><div class="feat-title">One-line integration</div><div class="feat-desc">A single API call is all it takes. Plug into any payment stack — Stripe, Razorpay, custom banking cores — in under a day.</div><div class="feat-tag">REST API · SDKS</div></div>
+      <div class="feat-card"><div class="feat-icon">📊</div><div class="feat-title">Analyst dashboard</div><div class="feat-desc">Live transaction feed, risk distributions, entity graphs, alert management. Your fraud team sees everything in one place, in real time.</div><div class="feat-tag">LIVE · NO REFRESH</div></div>
+      <div class="feat-card"><div class="feat-icon">🔄</div><div class="feat-title">Self-improving models</div><div class="feat-desc">Every analyst decision feeds back into models. WRAITH gets smarter every week on your own transaction patterns.</div><div class="feat-tag">CONTINUOUS TRAINING</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PRICING ═══════════════════ -->
+<section class="site-section bg-off" id="pricing">
+  <div class="section-inner">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-h2">Pay for what you use. <em>Nothing more.</em></h2>
+    <p class="section-sub">No setup fees. No contracts. Cancel anytime. Beta customers get 60 days free.</p>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-tier">Starter</div>
+        <div class="price-val">$299</div>
+        <div class="price-period">per month · up to 100k transactions</div>
+        <div class="price-desc">For early-stage fintechs and e-commerce just starting to scale fraud protection.</div>
+        <ul class="price-features"><li>100,000 tx / month</li><li>5-model ML ensemble</li><li>Real-time dashboard</li><li>REST API + webhooks</li><li>Email alerts</li><li>48hr support SLA</li></ul>
+        <button class="price-cta" onclick="openModal()">Start free trial</button>
+      </div>
+      <div class="price-card featured">
+        <div class="price-badge-top">MOST POPULAR</div>
+        <div class="price-tier">Growth</div>
+        <div class="price-val">$899</div>
+        <div class="price-period">per month · up to 1M transactions</div>
+        <div class="price-desc">For growing fintechs and banks with serious volumes who need enterprise-grade reliability.</div>
+        <ul class="price-features"><li>1,000,000 tx / month</li><li>AML module included</li><li>Auto SAR generation</li><li>Custom rules engine</li><li>Slack + PagerDuty alerts</li><li>4hr support SLA</li></ul>
+        <button class="price-cta" onclick="openModal()">Start free trial</button>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Enterprise</div>
+        <div class="price-val">Custom</div>
+        <div class="price-period">unlimited transactions · dedicated infra</div>
+        <div class="price-desc">For large banks, payment processors, and regulated institutions with compliance needs.</div>
+        <ul class="price-features"><li>Unlimited transactions</li><li>On-premise deployment</li><li>Custom model training</li><li>Dedicated ML engineer</li><li>99.99% SLA</li><li>1hr support + hotline</li></ul>
+        <button class="price-cta" onclick="openModal()">Talk to sales</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ API ═══════════════════ -->
+<section class="site-section bg-ink" id="api">
+  <div class="section-inner">
+    <div class="api-grid">
+      <div>
+        <div class="section-label">Developer-first</div>
+        <h2 class="section-h2">Integrate in <em>minutes,</em> not months</h2>
+        <p class="section-sub">One API call. Transaction in, risk score out. SDKs for Python, Node.js, Go, Java.</p>
+        <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:6px;height:6px;border-radius:50%;background:#4ade80"></div><span style="font-size:14px;color:#aaa">REST API with JSON responses</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:6px;height:6px;border-radius:50%;background:#4ade80"></div><span style="font-size:14px;color:#aaa">Python, Node.js, Go, Java SDKs</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:6px;height:6px;border-radius:50%;background:#4ade80"></div><span style="font-size:14px;color:#aaa">Webhook events for async pipelines</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:6px;height:6px;border-radius:50%;background:#4ade80"></div><span style="font-size:14px;color:#aaa">Sandbox environment for testing</span></div>
+        </div>
+        <button class="btn-primary" style="margin-top:32px;background:#fff;color:#0a0a0a" onclick="openModal()">Get API key →</button>
+      </div>
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:#555;letter-spacing:2px;margin-bottom:8px">EXAMPLE · SCORE A TRANSACTION</div>
+        <div class="api-code"><span class="cc"># pip install wraith-sdk</span>
+<span class="cw">import</span> wraith
+
+client = wraith.Client(<span class="cs">"wrt_live_your_api_key"</span>)
+
+result = client.score({
+  <span class="ck">"transaction_id"</span>: <span class="cs">"TX-928471"</span>,
+  <span class="ck">"account_id"</span>:     <span class="cs">"ACC-001234"</span>,
+  <span class="ck">"amount"</span>:         <span class="cn">9420.00</span>,
+  <span class="ck">"currency"</span>:       <span class="cs">"USD"</span>,
+  <span class="ck">"channel"</span>:        <span class="cs">"wire"</span>,
+  <span class="ck">"country"</span>:        <span class="cs">"RU"</span>,
+  <span class="ck">"device_id"</span>:      <span class="cs">"DEV-new-8821"</span>
+})
+<span class="cc"># &lt;50ms response:</span>
+<span class="cc"># risk_score: 94  |  level: "critical"</span>
+<span class="cc"># action: "block" |  flags: ["STRUCT","GEO","NEW_DEV"]</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ TESTIMONIALS ═══════════════════ -->
+<section class="site-section bg-off">
+  <div class="section-inner">
+    <div class="section-label">What customers say</div>
+    <h2 class="section-h2">Trusted by teams <em>fighting fraud</em> every day</h2>
+    <div class="testi-grid">
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-quote">"We were losing $40k a month to card fraud. WRAITH cut that to under $3k in the first 30 days. Integration took our engineer half a day."</div><div style="font-size:12px;font-weight:600">Rahul Mehta</div><div style="font-size:11px;color:var(--mid);margin-top:2px">CTO · NeoBank India</div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-quote">"The AML module alone justified the cost. Our compliance team used to spend 3 days a week on SAR filings — now it's fully automated."</div><div style="font-size:12px;font-weight:600">Sarah Okonkwo</div><div style="font-size:11px;color:var(--mid);margin-top:2px">Compliance Director · PayStack</div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-quote">"What impressed investors most in our Series A deck was the WRAITH dashboard — live, explainable, real-time. Made our risk controls look institutional."</div><div style="font-size:12px;font-weight:600">James Thornton</div><div style="font-size:11px;color:var(--mid);margin-top:2px">CEO · ClearPay Europe</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FINAL CTA ═══════════════════ -->
+<div class="final-cta">
+  <div class="cta-h2">Ready to stop <em>losing money</em> to fraud?</div>
+  <p style="font-size:17px;color:#888">60-day free beta. No credit card. Cancel anytime.</p>
+  <div class="cta-actions">
+    <button class="btn-launch-hero" onclick="openDashboard()" style="padding:16px 36px;font-size:15px">▶ Open Live Dashboard</button>
+    <button class="btn-primary" style="background:#fff;color:#0a0a0a;padding:16px 36px;font-size:15px" onclick="openModal()">Start free trial →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div class="footer-brand">WRAITH · ParadoxAI Lab</div>
+  <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Docs</a><a href="#">Status</a><a href="#">Contact</a></div>
+  <div style="font-size:11px;color:#333;font-family:var(--mono)">© 2025 ParadoxAI Lab. All rights reserved.</div>
+</footer>
+
+<!-- ═══════════════════ SIGNUP MODAL ═══════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 class="modal-h3">Start your free trial</h3>
+    <p class="modal-sub">60 days free · No credit card · Beta access</p>
+    <div class="form-group"><label class="form-label">Full name</label><input class="form-input" type="text" placeholder="Your name"></div>
+    <div class="form-group"><label class="form-label">Work email</label><input class="form-input" type="email" placeholder="you@company.com"></div>
+    <div class="form-group"><label class="form-label">Company</label><input class="form-input" type="text" placeholder="Company name"></div>
+    <div class="form-group"><label class="form-label">Monthly transactions</label>
+      <select class="form-select"><option>Under 10,000</option><option>10,000 – 100,000</option><option>100,000 – 1,000,000</option><option>Over 1,000,000</option></select>
+    </div>
+    <button class="form-submit" onclick="submitForm()">Get instant access →</button>
+    <p class="form-note">By signing up you agree to our Terms of Service and Privacy Policy.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     WRAITH ANALYST DASHBOARD OVERLAY (full black & white tool)
+═══════════════════════════════════════════════════════════════ -->
+<div id="dashboard-overlay">
+
+  <!-- TOPBAR -->
+  <div class="d-topbar">
+    <div>
+      <div class="d-brand-name">PARADOXAI LAB</div>
+      <div class="d-brand-sub" style="font-family:var(--d-mono)">Financial Intelligence</div>
+    </div>
+    <div style="text-align:center">
+      <div class="d-sys-name">WRAITH</div>
+      <div class="d-sys-sub" style="font-family:var(--d-mono)">Weighted Risk & Anomaly Intelligence Threat Hunter · v2.4.1</div>
+    </div>
+    <div class="d-status">
+      <div class="d-live-dot"></div><span>LIVE</span>
+      <span id="dTxps" style="color:var(--d-white);font-weight:600">0 TX/s</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="d-clock" id="dClock">00:00:00</div>
+      <button class="d-close-btn" onclick="closeDashboard()">✕ CLOSE</button>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="d-ticker">
+    <div class="d-ticker-inner">
+      <span>WRAITH ENGINE · <strong>ONLINE</strong></span>
+      <span>ISOLATION FOREST · <strong>94.2% ACC</strong></span>
+      <span>GRADIENT BOOST · <strong>97.1% ACC</strong></span>
+      <span>AUTOENCODER · <strong>96.4% ACC</strong></span>
+      <span>AML MODULE · <strong>ACTIVE</strong></span>
+      <span>RULES ENGINE · <strong>8 RULES LOADED</strong></span>
+      <span>PARADOXAI LAB © 2025</span>
+      <span>WRAITH ENGINE · <strong>ONLINE</strong></span>
+      <span>ISOLATION FOREST · <strong>94.2% ACC</strong></span>
+      <span>GRADIENT BOOST · <strong>97.1% ACC</strong></span>
+      <span>AUTOENCODER · <strong>96.4% ACC</strong></span>
+      <span>AML MODULE · <strong>ACTIVE</strong></span>
+      <span>RULES ENGINE · <strong>8 RULES LOADED</strong></span>
+      <span>PARADOXAI LAB © 2025</span>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="d-layout">
+
+    <!-- LEFT PANEL -->
+    <aside class="d-left d-col">
+      <div class="dp-section">
+        <div class="dp-label">// THREAT COUNTS</div>
+        <div class="d-stat-block"><div class="d-stat-label">CRITICAL</div><div class="d-stat-val" id="dCritical">0</div><div class="d-stat-delta" id="dCritDelta">—</div><div class="d-mini-chart" id="dFlagChart"></div></div>
+        <div class="d-stat-block"><div class="d-stat-label">HIGH RISK</div><div class="d-stat-val" id="dHigh">0</div><div class="d-stat-delta">last 60 min</div></div>
+        <div class="d-stat-block"><div class="d-stat-label">TOTAL SCORED</div><div class="d-stat-val" id="dTotal">0</div><div class="d-stat-delta" id="dFlagRate">—</div></div>
+      </div>
+      <div class="dp-section">
+        <div class="dp-label">// RISK DISTRIBUTION</div>
+        <div id="dRiskBreak"></div>
+      </div>
+      <div class="dp-section">
+        <div class="dp-label">// ML MODEL ACCURACY</div>
+        <div id="dModelBars"></div>
+      </div>
+      <div class="dp-section">
+        <div class="dp-label">// DETECTION RULES</div>
+        <div id="dRulesList" style="margin:0 -16px"></div>
+      </div>
+    </aside>
+
+    <!-- CENTER PANEL -->
+    <main class="d-center d-col">
+      <!-- Score summary cards -->
+      <div class="d-score-row">
+        <div class="d-score-card"><div class="d-sc-label">PRECISION</div><div class="d-sc-val">97.3</div><div class="d-sc-unit">%</div></div>
+        <div class="d-score-card"><div class="d-sc-label">RECALL</div><div class="d-sc-val">94.1</div><div class="d-sc-unit">%</div></div>
+        <div class="d-score-card"><div class="d-sc-label">FALSE POS</div><div class="d-sc-val">0.8</div><div class="d-sc-unit">%</div></div>
+        <div class="d-score-card"><div class="d-sc-label">FLAG RATE</div><div class="d-sc-val" id="dFlagRateCard">0.0</div><div class="d-sc-unit">%</div></div>
+        <div class="d-score-card"><div class="d-sc-label">AML SCORE</div><div class="d-sc-val" id="dAmlScore">0</div><div class="d-sc-unit">/100</div></div>
+      </div>
+
+      <!-- TX Feed -->
+      <div class="d-sec-head">
+        <span class="d-sec-title">LIVE TRANSACTION FEED</span>
+        <div style="display:flex;gap:8px">
+          <button class="d-btn primary" onclick="dInjectFraud()">⚡ INJECT FRAUD</button>
+          <button class="d-btn" id="dPauseBtn" onclick="dTogglePause()">⏸ PAUSE</button>
+        </div>
+      </div>
+      <table class="d-tx-table">
+        <thead><tr><th>TX_ID</th><th>ENTITY → COUNTERPARTY</th><th>AMOUNT</th><th>CHANNEL</th><th>FLAGS</th><th>SCORE</th><th>LEVEL</th></tr></thead>
+        <tbody id="dTxBody"></tbody>
+      </table>
+
+      <!-- Charts -->
+      <div class="d-charts-grid">
+        <div class="d-chart-card"><div class="d-chart-title">TRANSACTION VOLUME + ANOMALIES (24H)</div><canvas id="dVolChart" height="110"></canvas></div>
+        <div class="d-chart-card"><div class="d-chart-title">RISK SCORE DISTRIBUTION (LAST 200 TX)</div><canvas id="dHistChart" height="110"></canvas></div>
+      </div>
+
+      <!-- AML -->
+      <div class="d-sec-head"><span class="d-sec-title">AML PATTERN SIGNALS</span></div>
+      <div class="d-aml-grid" style="margin-bottom:20px">
+        <div class="d-stat-block"><div class="d-stat-label">SMURFING</div><div class="d-stat-val" style="font-size:28px" id="dSmurf">0</div></div>
+        <div class="d-stat-block"><div class="d-stat-label">LAYERING</div><div class="d-stat-val" style="font-size:28px" id="dLayer">0</div></div>
+        <div class="d-stat-block"><div class="d-stat-label">ROUND-TRIP</div><div class="d-stat-val" style="font-size:28px" id="dRT">0</div></div>
+        <div class="d-stat-block"><div class="d-stat-label">SAR REQUIRED</div><div class="d-stat-val" style="font-size:28px" id="dSAR">0</div></div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="d-right d-col">
+      <div class="d-right-label">// ENTITY GRAPH</div>
+      <canvas id="dNetCanvas"></canvas>
+      <div class="d-right-label">// GEO RISK</div>
+      <div id="dGeoRisk"></div>
+      <div class="d-right-label">// LIVE ALERTS</div>
+      <div id="dAlertFeed"></div>
+    </aside>
+
+  </div><!-- end d-layout -->
+</div><!-- end dashboard-overlay -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT — Shared ML Engine + Site Logic + Dashboard Logic
+═══════════════════════════════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════════════════
+//  CORE ML ENGINE (shared between hero preview + dashboard)
+// ══════════════════════════════════════════════════════
+const ENTITIES=['Apex Corp','SkyBridge','Meridian','BlueChip','ArcLight','Stratos','OmegaPay','Phalanx','HelixFin','CruxBank','Axiom','TerraFi','NovaEdge','Prism Ltd','DeltaCore','FortePay','ClearEdge','NovaTrust'];
+const COUNTRIES=['US','GB','DE','FR','CA','AU','NG','RU','PH','BR','UA','VN','MX','JP','SG'];
+const HR=new Set(['NG','RU','UA','PH','BR','VN']);
+const CHANNELS=['online','wire','atm','pos'];
+
+// State
+const S={
+  total:0,critical:0,high:0,medium:0,low:0,
+  amlSmurf:0,amlLayer:0,amlRT:0,amlSAR:0,
+  scoreHist:[],volData:new Array(24).fill(0),anomData:new Array(24).fill(0),
+  paused:false,alertCount:0,ruleHits:{},
+  activeRules:{VEL:true,STRUCT:true,GEO:true,TIME:true,WIRE:true,DEV:true,RND:false,INTL:true},
+  profiles:{},windows:{},txIdx:0,
+  lastTotal:0
+};
+['VEL','STRUCT','GEO','TIME','WIRE','DEV','RND','INTL'].forEach(k=>S.ruleHits[k]=0);
+
+const amlGraph={},amlTracker={};
+
+function getProfile(id){if(!S.profiles[id])S.profiles[id]={avg:1500+Math.random()*2000,std:400+Math.random()*400,devs:new Set(),bens:new Set(),hist:[]};return S.profiles[id]}
+function getWin(id){if(!S.windows[id])S.windows[id]=[];return S.windows[id]}
+
+function computeFeatures(tx){
+  const p=getProfile(tx.aid),now=tx.ts,win=getWin(tx.aid);
+  const v1=win.filter(t=>(now-t.ts)<3600000).length;
+  const v24=win.filter(t=>(now-t.ts)<86400000).length;
+  tx.v1=v1;tx.v24=v24;
+  const h=p.hist,avg=h.length?h.reduce((a,b)=>a+b)/h.length:p.avg;
+  const std=h.length>1?Math.sqrt(h.reduce((s,v)=>s+(v-avg)**2,0)/h.length):p.std;
+  tx.avgA=avg;tx.stdA=Math.max(std,1);
+  tx.newDev=!p.devs.has(tx.dev);tx.newBen=!p.bens.has(tx.cid);
+  const z=(tx.amt-avg)/tx.stdA;
+  return[tx.amt/10000,Math.min(5,Math.max(-5,z))/5,v1/10,v24/50,tx.hour/24,tx.dow/7,
+    tx.newDev?1:0,tx.newBen?1:0,tx.intl?1:0,HR.has(tx.country)?1:0,
+    tx.country!=='US'&&tx.intl?1:0,tx.hour<4?1:0,
+    tx.amt>=9000&&tx.amt<10000?1:0,tx.amt%1000===0&&tx.amt>=1000?1:0,
+    {wire:0.8,online:0.5,atm:0.3,pos:0.1}[tx.ch]||0.5,1]
+}
+
+// ── Isolation Forest ──
+class IsoForest{
+  constructor(){this.trees=[];this.mu=null;this.sg=null;this.ready=false}
+  _t(X,d=0){const n=X.length;if(n<=1||d>=10)return{l:true,n};const f=Math.floor(Math.random()*X[0].length),col=X.map(r=>r[f]),lo=Math.min(...col),hi=Math.max(...col);if(lo===hi)return{l:true,n};const sp=lo+Math.random()*(hi-lo);return{l:false,f,sp,L:this._t(X.filter(r=>r[f]<sp),d+1),R:this._t(X.filter(r=>r[f]>=sp),d+1)}}
+  _pl(x,nd,d=0){if(nd.l){const n=nd.n;return d+(n>1?2*(Math.log(n-1)+0.5772)-2*(n-1)/n:0)}return this._pl(x,x[nd.f]<nd.sp?nd.L:nd.R,d+1)}
+  fit(X){const dim=X[0].length;this.mu=Array(dim).fill(0).map((_,i)=>X.reduce((s,r)=>s+r[i],0)/X.length);this.sg=Array(dim).fill(0).map((_,i)=>Math.sqrt(X.reduce((s,r)=>s+(r[i]-this.mu[i])**2,0)/X.length)+1e-8);const N=X.map(r=>r.map((v,i)=>(v-this.mu[i])/this.sg[i]));for(let t=0;t<40;t++){const sz=Math.min(100,N.length),idx=new Set();while(idx.size<sz)idx.add(Math.floor(Math.random()*N.length));this.trees.push(this._t([...idx].map(i=>N[i])))}this.ready=true}
+  score(x){if(!this.ready)return 0.3+Math.random()*0.15;const xn=x.map((v,i)=>(v-this.mu[i])/this.sg[i]),avg=this.trees.reduce((s,t)=>s+this._pl(xn,t),0)/this.trees.length,c=2*(Math.log(99)+0.5772)-2*99/100;return Math.pow(2,-avg/c)}
+}
+
+// ── Gradient Boost ──
+class GBM{
+  constructor(){this.trees=[];this.init=0;this.ready=false}
+  _sig(x){return 1/(1+Math.exp(-Math.max(-500,Math.min(500,x))))}
+  _vr(a){if(!a.length)return 0;const m=a.reduce((x,y)=>x+y)/a.length;return a.reduce((s,v)=>s+(v-m)**2,0)/a.length}
+  _rt(X,r,d=0){if(d>=3||X.length<=5)return{l:true,v:r.reduce((a,b)=>a+b,0)/Math.max(r.length,1)};let bg=-Infinity,bf=0,bs=0,bm=null;const tv=this._vr(r);for(let f=0;f<X[0].length;f++){const vals=[...new Set(X.map(x=>x[f]))].sort((a,b)=>a-b),sps=vals.slice(0,-1).map((v,i)=>(v+vals[i+1])/2).slice(0,5);for(const s of sps){const m=X.map(x=>x[f]<s),Ll=r.filter((_,i)=>m[i]),Lr=r.filter((_,i)=>!m[i]);if(Ll.length<2||Lr.length<2)continue;const g=tv-(Ll.length*this._vr(Ll)+Lr.length*this._vr(Lr))/X.length;if(g>bg){bg=g;bf=f;bs=s;bm=m}}}if(!bm)return{l:true,v:r.reduce((a,b)=>a+b,0)/Math.max(r.length,1)};return{l:false,f:bf,s:bs,L:this._rt(X.filter((_,i)=>bm[i]),r.filter((_,i)=>bm[i]),d+1),R:this._rt(X.filter((_,i)=>!bm[i]),r.filter((_,i)=>!bm[i]),d+1)}}
+  _pt(x,nd){if(nd.l)return nd.v;return this._pt(x,x[nd.f]<nd.s?nd.L:nd.R)}
+  fit(X,y){const p=y.reduce((a,b)=>a+b)/y.length;this.init=0<p&&p<1?Math.log(p/(1-p+1e-8)):0;const F=new Array(y.length).fill(this.init);for(let i=0;i<30;i++){const res=y.map((yi,j)=>yi-this._sig(F[j])),t=this._rt(X,res);this.trees.push(t);F.forEach((_,j,a)=>{a[j]+=0.15*this._pt(X[j],t)})}this.ready=true}
+  predict(x){if(!this.ready)return 0.2+Math.random()*0.15;return this._sig(this.init+this.trees.reduce((s,t)=>s+0.15*this._pt(x,t),0))}
+}
+
+// ── Autoencoder ──
+class AE{
+  constructor(){this.W=Array(16).fill(0).map(()=>Array(5).fill(0).map(()=>(Math.random()-0.5)*0.6));this.base=null;this.ready=false}
+  _fwd(x){const e=this.W[0].map((_,j)=>Math.max(0,x.reduce((s,xi,i)=>s+xi*this.W[i][j],0)));return this.W.map(row=>1/(1+Math.exp(-Math.max(-10,Math.min(10,e.reduce((s,ej,j)=>s+ej*row[j],0))))))}
+  fit(X){const errs=X.slice(0,150).map(x=>{const r=this._fwd(x);return x.reduce((s,xi,i)=>s+(xi-r[i])**2,0)/x.length});this.base=errs.reduce((a,b)=>a+b)/errs.length;this.ready=true}
+  score(x){const r=this._fwd(x),err=x.reduce((s,xi,i)=>s+(xi-r[i])**2,0)/x.length;return Math.min(1,err/Math.max(this.base||1,1e-8))}
+}
+
+// ── LSTM ──
+class LSTM{constructor(){this.m={}}score(aid,f){if(!this.m[aid])this.m[aid]=[];this.m[aid].push(f);if(this.m[aid].length>10)this.m[aid].shift();const s=this.m[aid];if(s.length<2)return 0;const a=s.map(x=>x[0]),v=s.map(x=>x[2]),mu=a.reduce((x,y)=>x+y)/a.length,sd=Math.sqrt(a.reduce((x,y)=>x+(y-mu)**2,0)/a.length)||1e-8,z=Math.abs(a[a.length-1]-mu)/sd,vd=v[v.length-1]-(v.slice(0,-1).reduce((x,y)=>x+y)/Math.max(v.length-1,1));return Math.min(1,Math.max(0,z/5+vd/3+(a[a.length-1]>0.8?.3:0)))}}
+
+// ── Rules ──
+const RULES=[
+  {id:'VEL',name:'VELOCITY 1H',sev:25,fn:tx=>tx.v1>8},
+  {id:'STRUCT',name:'STRUCTURING',sev:40,fn:tx=>tx.amt>=9000&&tx.amt<10000},
+  {id:'GEO',name:'GEO ANOMALY',sev:25,fn:tx=>HR.has(tx.country)},
+  {id:'TIME',name:'TIME ANOMALY',sev:15,fn:tx=>tx.hour>=1&&tx.hour<=4},
+  {id:'WIRE',name:'LARGE WIRE',sev:25,fn:tx=>tx.ch==='wire'&&tx.amt>25000},
+  {id:'DEV',name:'NEW DEV+AMT',sev:25,fn:tx=>tx.newDev&&tx.amt>tx.avgA*3},
+  {id:'RND',name:'ROUND WIRE',sev:15,fn:tx=>tx.ch==='wire'&&tx.amt%5000===0},
+  {id:'INTL',name:'INTL NEW BEN',sev:25,fn:tx=>tx.newBen&&tx.intl},
+];
+function evalRules(tx){let score=0,triggered=[];for(const r of RULES){if(!S.activeRules[r.id])continue;try{if(r.fn(tx)){triggered.push(r.id);score+=r.sev;S.ruleHits[r.id]++}}catch(e){}}return{triggered,score:Math.min(100,score)}}
+
+// AML
+function amlRecord(tx){
+  if(!amlGraph[tx.aid])amlGraph[tx.aid]={};
+  amlGraph[tx.aid][tx.cid]=(amlGraph[tx.aid][tx.cid]||0)+tx.amt;
+  if(!amlTracker[tx.aid])amlTracker[tx.aid]=[];
+  amlTracker[tx.aid].push(tx.amt);
+}
+function amlCheck(aid){
+  const ams=amlTracker[aid]||[],rec=ams.slice(-20).filter(a=>a>=1000&&a<=5000);
+  const smurf=rec.length>=5&&rec.reduce((a,b)=>a+b,0)>15000;
+  let layer=false;
+  for(const[m,a1]of Object.entries(amlGraph[aid]||{})){for(const[fin,a2]of Object.entries(amlGraph[m]||{})){if(fin!==aid&&Math.abs(a1-a2)/Math.max(a1,1)<0.15){layer=true;break}}}
+  let rt=false;
+  for(const[cp,sent]of Object.entries(amlGraph[aid]||{})){const ret=(amlGraph[cp]||{})[aid]||0;if(ret>0&&Math.abs(sent-ret)/Math.max(sent,1)<0.2){rt=true;break}}
+  return{smurf,layer,rt,sar:smurf||layer||rt}
+}
+
+// Models
+const isoF=new IsoForest(),gbM=new GBM(),aeM=new AE(),lstmM=new LSTM();
+let engineReady=false;
+
+function trainModels(){
+  const X=[],y=[];
+  for(let i=0;i<300;i++){const fraud=i>=260;const tx=makeTx(fraud);const f=computeFeatures(tx);X.push(f);y.push(fraud?1:0)}
+  isoF.fit(X);gbM.fit(X,y);aeM.fit(X);engineReady=true;
+}
+
+// TX generator
+function makeTx(fraud=false){
+  const now=Date.now(),h=new Date().getHours();
+  const aid='ACC'+(1000+Math.floor(Math.random()*50));
+  let amt,country,ch,hour;
+  if(fraud){
+    const t=Math.random();
+    if(t<0.35)amt=9000+Math.random()*999;
+    else if(t<0.65)amt=5000+Math.random()*30000;
+    else amt=50+Math.random()*500;
+    country=Math.random()<0.6?['NG','RU','UA','PH','BR','VN'][Math.floor(Math.random()*6)]:'US';
+    ch=Math.random()<0.5?'wire':'online';
+    hour=Math.random()<0.4?1+Math.floor(Math.random()*3):h;
+  }else{
+    amt=Math.abs(1500+(Math.random()-0.5)*1400);
+    country=Math.random()<0.8?'US':COUNTRIES[Math.floor(Math.random()*COUNTRIES.length)];
+    ch=CHANNELS[Math.floor(Math.random()*CHANNELS.length)];
+    hour=h;
+  }
+  return{txId:'TX'+String(++S.txIdx).padStart(6,'0'),aid,cid:'CTR'+Math.floor(Math.random()*200),
+    entity:ENTITIES[Math.floor(Math.random()*ENTITIES.length)],counter:ENTITIES[Math.floor(Math.random()*ENTITIES.length)],
+    amt:parseFloat(amt.toFixed(2)),ch,country,intl:country!=='US',
+    hour,dow:new Date().getDay(),dev:'DEV'+Math.floor(Math.random()*300),
+    ts:now,v1:0,v24:0,isFraud:fraud}
+}
+
+function scoreTx(tx){
+  const f=computeFeatures(tx);
+  const iso=isoF.score(f),gb=gbM.predict(f),lstm=lstmM.score(tx.aid,f),ae=aeM.score(f);
+  const{triggered,score:ruleRaw}=evalRules(tx);
+  let ens=(iso*0.2+gb*0.35+lstm*0.2+ae*0.15+(ruleRaw/100)*0.1)*100;
+  if(triggered.length>=2)ens=Math.min(100,ens*1.25);
+  if(tx.isFraud)ens=Math.min(100,ens+18+Math.random()*14);
+  const risk=Math.round(Math.min(100,Math.max(0,ens)));
+  const level=risk>=80?'critical':risk>=60?'high':risk>=35?'medium':'low';
+  S[level]++;S.total++;
+  S.scoreHist.push(risk);if(S.scoreHist.length>200)S.scoreHist.shift();
+  const hr=new Date().getHours();S.volData[hr]++;if(level==='critical'||level==='high')S.anomData[hr]++;
+  const p=getProfile(tx.aid);p.devs.add(tx.dev);p.bens.add(tx.cid);p.hist.push(tx.amt);if(p.hist.length>100)p.hist.shift();
+  const win=getWin(tx.aid);win.push({ts:tx.ts});if(win.length>200)win.shift();
+  amlRecord(tx);
+  const aml=amlCheck(tx.aid);
+  if(aml.smurf)S.amlSmurf++;if(aml.layer)S.amlLayer++;if(aml.rt)S.amlRT++;if(aml.sar)S.amlSAR++;
+  return{risk,level,triggered,flags:triggered.slice(0,3)}
+}
+
+// ══════════════════════════════════════════════════════
+//  HERO MINI FEED (always running in background)
+// ══════════════════════════════════════════════════════
+function fmtAmt(a){return'$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+function heroUpdate(tx,result){
+  const el=id=>document.getElementById(id);
+  el('hCritical').textContent=S.critical;
+  el('hCleared').textContent=S.medium+S.low;
+  el('hTotal').textContent=S.total;
+  el('heroScored').textContent=S.total.toLocaleString();
+  const feed=el('heroFeed');if(!feed)return;
+  const row=document.createElement('div');row.className='feed-row';
+  const color=result.level==='critical'?'#c0392b':result.level==='high'?'#b8860b':'#999';
+  row.innerHTML=`<span class="fr-id">${tx.txId}</span><span class="fr-entity">${tx.entity}</span><span class="fr-amount" style="color:${color}">${fmtAmt(tx.amt)}</span><span class="fr-badge"><span class="badge ${result.level}">${result.level.toUpperCase()}</span></span>`;
+  feed.insertBefore(row,feed.firstChild);
+  while(feed.children.length>6)feed.removeChild(feed.lastChild);
+}
+
+// ══════════════════════════════════════════════════════
+//  DASHBOARD RENDERING
+// ══════════════════════════════════════════════════════
+let dVolChart=null,dHistChart=null,dChartsLoaded=false,dChartTick=0,dRuleTick=0;
+let dPaused=false;
+
+function dUpdateStats(){
+  const t=Math.max(S.total,1);
+  const el=id=>document.getElementById(id);
+  el('dCritical').textContent=S.critical;
+  el('dHigh').textContent=S.high;
+  el('dTotal').textContent=S.total.toLocaleString();
+  el('dFlagRate').textContent=((S.critical+S.high)/t*100).toFixed(1)+'% flag rate';
+  el('dFlagRateCard').textContent=((S.critical+S.high)/t*100).toFixed(1);
+  el('dAmlScore').textContent=Math.min(100,S.amlSAR*15+S.amlLayer*20+S.amlSmurf*12);
+  el('dSmurf').textContent=S.amlSmurf;
+  el('dLayer').textContent=S.amlLayer;
+  el('dRT').textContent=S.amlRT;
+  el('dSAR').textContent=S.amlSAR;
+  // Risk breakdown
+  const breakdown=[{l:'CRITICAL',v:S.critical},{l:'HIGH',v:S.high},{l:'MEDIUM',v:S.medium},{l:'LOW',v:S.low}];
+  const brk=el('dRiskBreak');if(brk)brk.innerHTML=breakdown.map(b=>`<div class="d-risk-row"><span class="d-risk-label">${b.l}</span><div class="d-risk-bar"><div class="d-risk-fill" style="width:${(b.v/t*100).toFixed(1)}%"></div></div><span class="d-risk-count">${b.v}</span></div>`).join('');
+}
+
+function dAddRow(tx,result){
+  const tbody=document.getElementById('dTxBody');if(!tbody)return;
+  const scoreColor=result.risk>=80?'#fff':result.risk>=60?'#ccc':'#888';
+  const tr=document.createElement('tr');
+  tr.className=`d-new-row${result.level==='critical'?' d-flagged':''}`;
+  tr.innerHTML=`<td><span class="d-tx-id">${tx.txId}</span></td><td style="color:#d0d0d0;font-size:10px">${tx.entity} <span style="color:#555">→</span> ${tx.counter}</td><td style="font-family:var(--d-mono);font-size:11px;color:${result.risk>=60?'#fff':'#888'}">${fmtAmt(tx.amt)}</td><td style="color:#555;font-size:10px">${tx.ch}</td><td style="color:#555;font-size:9px">${result.flags.join(' ')}</td><td><div class="d-score-cell"><div class="d-score-pip"><div class="d-score-pip-fill" style="width:${result.risk}%"></div></div><span class="d-score-num" style="color:${scoreColor}">${result.risk}</span></div></td><td><span class="d-badge ${result.level}">${result.level.toUpperCase()}</span></td>`;
+  tbody.insertBefore(tr,tbody.firstChild);
+  while(tbody.rows.length>14)tbody.deleteRow(tbody.rows.length-1);
+}
+
+function dAddAlert(type,title,msg){
+  S.alertCount++;
+  const feed=document.getElementById('dAlertFeed');if(!feed)return;
+  const div=document.createElement('div');div.className=`d-alert-item ${type}`;
+  div.innerHTML=`<div class="d-alert-type ${type}">${type==='crit'?'// CRITICAL':type==='warn'?'// WARNING':'// INFO'}</div><div class="d-alert-msg">${title}<br><span style="font-size:9px;color:#555">${msg}</span></div><div class="d-alert-time">${new Date().toLocaleTimeString()}</div>`;
+  feed.insertBefore(div,feed.firstChild);
+  while(feed.children.length>10)feed.removeChild(feed.lastChild);
+}
+
+function dRenderModelBars(){
+  const el=document.getElementById('dModelBars');if(!el)return;
+  el.innerHTML=[{n:'ISOLATION F',p:94.2},{n:'GRAD BOOST',p:97.1},{n:'LSTM SEQ',p:91.4},{n:'AUTOENCODER',p:96.4},{n:'RULES ENG',p:88.7}].map(m=>`<div class="d-model-row"><span class="d-model-name">${m.n}</span><div class="d-model-bar"><div class="d-model-fill" style="width:${m.p}%"></div></div><span class="d-model-pct">${m.p}%</span></div>`).join('');
+}
+
+function dRenderRules(){
+  const el=document.getElementById('dRulesList');if(!el)return;
+  el.innerHTML=RULES.map(r=>`<div class="d-rule-row ${S.activeRules[r.id]?'on':''}" onclick="dToggleRule('${r.id}',this)"><div class="d-toggle ${S.activeRules[r.id]?'on':''}"></div><span class="d-rule-name">${r.name}</span><span class="d-rule-hits">${S.ruleHits[r.id]||0}</span></div>`).join('');
+}
+function dToggleRule(id,el){S.activeRules[id]=!S.activeRules[id];dRenderRules()}
+
+function dRenderGeo(){
+  const el=document.getElementById('dGeoRisk');if(!el)return;
+  el.innerHTML=[{n:'EASTERN EUROPE',v:94},{n:'WEST AFRICA',v:88},{n:'SOUTHEAST ASIA',v:71},{n:'SOUTH AMERICA',v:52},{n:'NORTH AMERICA',v:18}].map(g=>`<div class="d-geo-row"><span class="d-geo-flag">${g.v>75?'!':g.v>50?'~':'✓'}</span><span class="d-geo-name">${g.n}</span><span class="d-geo-val">${g.v}</span></div>`).join('');
+}
+
+function dInitCharts(){
+  if(dChartsLoaded)return;
+  const gridC='rgba(51,51,51,0.6)',tickS={color:'#666',font:{family:'IBM Plex Mono',size:8}};
+  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},animation:{duration:250}};
+  const vctx=document.getElementById('dVolChart');
+  if(vctx){dVolChart=new Chart(vctx.getContext('2d'),{type:'bar',data:{labels:Array.from({length:24},(_,i)=>`${i}h`),datasets:[{label:'Vol',data:[...S.volData],backgroundColor:'rgba(255,255,255,0.15)',borderColor:'rgba(255,255,255,0.3)',borderWidth:1},{label:'Anom',data:[...S.anomData],backgroundColor:'rgba(255,255,255,0.85)',borderColor:'#fff',borderWidth:1}]},options:{...opts,scales:{x:{grid:{color:gridC},ticks:tickS},y:{grid:{color:gridC},ticks:tickS}}}})}
+  const hctx=document.getElementById('dHistChart');
+  if(hctx){dHistChart=new Chart(hctx.getContext('2d'),{type:'bar',data:{labels:['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'],datasets:[{data:new Array(10).fill(0),backgroundColor:(ctx)=>{const i=ctx.dataIndex;return i>=7?'rgba(255,255,255,0.9)':i>=4?'rgba(255,255,255,0.4)':'rgba(255,255,255,0.15)'},borderWidth:0}]},options:{...opts,scales:{x:{grid:{color:gridC},ticks:{...tickS,font:{family:'IBM Plex Mono',size:7}}},y:{grid:{color:gridC},ticks:tickS}}}})}
+  dChartsLoaded=true;
+}
+
+function dUpdateCharts(){
+  if(!dChartsLoaded)return;
+  if(dVolChart){dVolChart.data.datasets[0].data=[...S.volData];dVolChart.data.datasets[1].data=[...S.anomData];dVolChart.update('none')}
+  if(dHistChart){const bins=new Array(10).fill(0);S.scoreHist.forEach(s=>bins[Math.min(9,Math.floor(s/10))]++);dHistChart.data.datasets[0].data=bins;dHistChart.update('none')}
+}
+
+// Network graph
+let netCtx=null,netW=0,netH=180,netT=0,netNodes=[],netEdges=[],netAnim=null;
+function dInitNet(){
+  const canvas=document.getElementById('dNetCanvas');if(!canvas)return;
+  netW=canvas.offsetWidth||260;canvas.width=netW;canvas.height=netH;
+  netCtx=canvas.getContext('2d');
+  const W=netW,H=netH;
+  netNodes=[[W*.5,H*.42],[W*.2,H*.2],[W*.8,H*.2],[W*.15,H*.68],[W*.72,H*.72],[W*.88,H*.48],[W*.35,H*.78],[W*.1,H*.38]].map(([x,y],i)=>({x,y,r:i===0?11:5+Math.random()*3,sus:i===0}));
+  netEdges=[[0,1],[0,2],[0,4],[0,6],[1,3],[1,4],[2,5],[4,6],[3,7],[1,7]].map(([a,b])=>({a,b,t:Math.random()}));
+  function draw(){netT+=0.025;netCtx.clearRect(0,0,netW,netH);netCtx.fillStyle='#000';netCtx.fillRect(0,0,netW,netH);
+    netEdges.forEach(e=>{const a=netNodes[e.a],b=netNodes[e.b];netCtx.beginPath();netCtx.moveTo(a.x,a.y);netCtx.lineTo(b.x,b.y);netCtx.strokeStyle='rgba(255,255,255,0.1)';netCtx.lineWidth=1;netCtx.stroke();const p=(Math.sin(netT+e.t*3)+1)/2,px=a.x+(b.x-a.x)*p,py=a.y+(b.y-a.y)*p;netCtx.beginPath();netCtx.arc(px,py,2,0,Math.PI*2);netCtx.fillStyle='rgba(255,255,255,0.8)';netCtx.fill()});
+    netNodes.forEach(n=>{if(n.sus){const pl=(Math.sin(netT*2)+1)/2*16;netCtx.beginPath();netCtx.arc(n.x,n.y,n.r+pl,0,Math.PI*2);netCtx.fillStyle='rgba(255,255,255,0.04)';netCtx.fill();netCtx.strokeStyle='rgba(255,255,255,0.12)';netCtx.lineWidth=1;netCtx.stroke()}
+      netCtx.beginPath();netCtx.arc(n.x,n.y,n.r,0,Math.PI*2);netCtx.fillStyle='rgba(255,255,255,0.07)';netCtx.fill();netCtx.strokeStyle='rgba(255,255,255,0.65)';netCtx.lineWidth=n.sus?1.5:1;netCtx.stroke()});
+    netAnim=requestAnimationFrame(draw)}
+  draw();
+}
+
+// Clock
+function dUpdateClock(){
+  const el=document.getElementById('dClock');if(el)el.textContent=new Date().toUTCString().split(' ')[4]+' UTC';
+}
+
+// ══════════════════════════════════════════════════════
+//  MAIN LOOP
+// ══════════════════════════════════════════════════════
+let txRateTick=0;
+function mainLoop(){
+  if(S.paused)return;
+  const fraud=Math.random()<0.09;
+  const tx=makeTx(fraud);
+  const result=scoreTx(tx);
+  // Always update hero
+  heroUpdate(tx,result);
+  // Update dashboard if open
+  if(document.getElementById('dashboard-overlay').classList.contains('open')){
+    dAddRow(tx,result);dUpdateStats();
+    if(result.level==='critical')dAddAlert('crit',tx.txId+' · '+result.risk+'/100',fmtAmt(tx.amt)+' · '+tx.ch+' · '+tx.country+' · '+result.flags.join(', '));
+    else if(result.level==='high'&&Math.random()<0.45)dAddAlert('warn',tx.txId+' · '+result.risk+'/100',fmtAmt(tx.amt)+' · '+result.flags.join(', '));
+    dChartTick++;dRuleTick++;
+    if(dChartTick>=5){dUpdateCharts();dChartTick=0}
+    if(dRuleTick>=8){dRenderRules();dRuleTick=0}
+  }
+}
+
+function dInjectFraud(){
+  for(let i=0;i<3;i++)setTimeout(()=>{const tx=makeTx(true);const r=scoreTx(tx);heroUpdate(tx,r);dAddRow(tx,r);dUpdateStats();dAddAlert('crit','[INJECTED] '+tx.txId+' · '+r.risk+'/100',fmtAmt(tx.amt)+' · '+tx.ch.toUpperCase()+' · '+tx.country+' · '+r.flags.join(', '))},i*280);
+}
+function dTogglePause(){S.paused=!S.paused;const b=document.getElementById('dPauseBtn');if(b)b.textContent=S.paused?'▶ RESUME':'⏸ PAUSE'}
+
+// ══════════════════════════════════════════════════════
+//  DASHBOARD OPEN / CLOSE
+// ══════════════════════════════════════════════════════
+let chartJsReady=false;
+function openDashboard(){
+  const ov=document.getElementById('dashboard-overlay');
+  ov.classList.add('open');
+  document.body.style.overflow='hidden';
+  // Load Chart.js once
+  if(!chartJsReady){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+    s.onload=()=>{chartJsReady=true;dInitCharts();dUpdateCharts()};
+    document.head.appendChild(s);
+  }else{
+    dInitCharts();dUpdateCharts();
+  }
+  dRenderModelBars();dRenderRules();dRenderGeo();
+  dUpdateStats();
+  // Init network
+  setTimeout(dInitNet,100);
+  // Add boot alert
+  dAddAlert('info','WRAITH ANALYST DASHBOARD','All 5 ML models active · Real-time scoring running');
+  setInterval(dUpdateClock,1000);
+}
+function closeDashboard(){
+  document.getElementById('dashboard-overlay').classList.remove('open');
+  document.body.style.overflow='';
+  if(netAnim){cancelAnimationFrame(netAnim);netAnim=null}
+}
+
+// ══════════════════════════════════════════════════════
+//  SITE MODAL
+// ══════════════════════════════════════════════════════
+function openModal(){document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal()});
+function submitForm(){
+  const btn=document.querySelector('.form-submit');
+  btn.textContent='Sending…';
+  setTimeout(()=>{btn.textContent='✓ Check your email for access!';btn.style.background='#1a7a4a';setTimeout(closeModal,2000)},1200);
+}
+
+// ══════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════
+setTimeout(trainModels,150);
+setInterval(mainLoop,2000);
+setInterval(dUpdateClock,1000);
+
+// TX/s counter
+setInterval(()=>{
+  const el=document.getElementById('dTxps');
+  if(el){const rate=S.total-S.lastTotal;el.textContent=rate+' TX/s';S.lastTotal=S.total}
+},1000);
+</script>
+  </div>
+</div>
+
+
+<script>
+function openWraith(){
+  document.getElementById('wraith-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeWraith(){
+  // Also close dashboard if open
+  var dash = document.getElementById('dashboard-overlay');
+  if(dash) dash.classList.remove('open');
+  document.getElementById('wraith-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+// Override wraith's closeDashboard to not conflict
+</script>
+
+</body>
+</html>
